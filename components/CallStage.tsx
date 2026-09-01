@@ -83,7 +83,12 @@ export default function CallStage({
   const [selectedUserForVolume, setSelectedUserForVolume] = useState<string | null>(null);
   
   // 🎯 Estado de Foco / Spotlight: ID do item focado no centro (ex: 'screen-share' ou ID do participante '1', '2', etc.)
-  const [focusedId, setFocusedId] = useState<string>("screen-share");
+  const [focusedId, setFocusedId] = useState<string>(
+    () => participants[0]?.id ?? "screen-share"
+  );
+
+  const firstParticipantId = participants[0]?.id;
+  const screenSharerId = screenSharer?.id;
 
   const [userVolumes, setUserVolumes] = useState<Record<string, number>>({
     "1": 100,
@@ -103,10 +108,19 @@ export default function CallStage({
     }
   }, [isMyScreenSharing, screenShareStream]);
 
+  // Quando o compartilhamento termina, remove o foco da tela
+  useEffect(() => {
+    if (isMyScreenSharing || screenSharerId) return;
+
+    setFocusedId((current) =>
+      current === "screen-share" ? firstParticipantId ?? current : current
+    );
+  }, [isMyScreenSharing, screenSharerId, firstParticipantId]);
+
   const focusedParticipant = participants.find((p) => p.id === focusedId);
   const isScreenShareFocused = focusedId === "screen-share";
 
-  const isScreenAvailable = isMyScreenSharing || true;
+  const isScreenAvailable = isMyScreenSharing || !!screenSharer;
   const showScreenInThumbnails = !isScreenShareFocused && isScreenAvailable;
   const otherParticipants = participants.filter((p) => p.id !== focusedId);
 
@@ -258,7 +272,7 @@ export default function CallStage({
 
             {/* Top Right Controls */}
             <div className="absolute top-4 right-4 flex items-center gap-1 z-10">
-              {!isScreenShareFocused && (
+              {!isScreenShareFocused && isScreenAvailable && (
                 <button
                   onClick={() => setFocusedId("screen-share")}
                   className="bg-[#13131b]/90 backdrop-blur-md px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 text-xs text-[#c7c4d7] hover:text-white hover:bg-[#292932] border border-white/10 transition-colors shadow-lg"
@@ -429,45 +443,47 @@ export default function CallStage({
         /* GRID VIEW COMPLETO: Todos os quadrados em grade igualitária */
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3.5 min-h-0 overflow-y-auto custom-scrollbar p-1">
           {/* Tile de Tela no Grid */}
-          <div
-            onClick={() => {
-              setFocusedId("screen-share");
-            }}
-            className="bg-[#1b1b23] rounded-2xl overflow-hidden relative shadow-xl border border-[#292932] hover:border-[#6366f1] hover:scale-[1.01] cursor-pointer flex flex-col justify-center items-center transition-all duration-200 group min-h-[180px]"
-            title={t.stage.focusCenter}
-          >
-            {isMyScreenSharing && screenShareStream ? (
-              <div className="absolute inset-0 bg-black flex items-center justify-center pointer-events-none">
-                <VideoStreamPlayer
-                  stream={screenShareStream}
-                  muted={true}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-[#11121d] to-[#151624] p-4 flex flex-col justify-between pointer-events-none">
-                <div className="flex items-center gap-2 text-xs text-indigo-400 font-mono">
-                  <ScreenShare className="w-4 h-4" />
-                  <span>{t.stage.screenStream}</span>
+          {isScreenAvailable && (
+            <div
+              onClick={() => {
+                setFocusedId("screen-share");
+              }}
+              className="bg-[#1b1b23] rounded-2xl overflow-hidden relative shadow-xl border border-[#292932] hover:border-[#6366f1] hover:scale-[1.01] cursor-pointer flex flex-col justify-center items-center transition-all duration-200 group min-h-[180px]"
+              title={t.stage.focusCenter}
+            >
+              {isMyScreenSharing && screenShareStream ? (
+                <div className="absolute inset-0 bg-black flex items-center justify-center pointer-events-none">
+                  <VideoStreamPlayer
+                    stream={screenShareStream}
+                    muted={true}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
-                <span className="text-xs text-slate-300 font-mono">
-                  StreamSyncRoom.tsx
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-[#11121d] to-[#151624] p-4 flex flex-col justify-between pointer-events-none">
+                  <div className="flex items-center gap-2 text-xs text-indigo-400 font-mono">
+                    <ScreenShare className="w-4 h-4" />
+                    <span>{t.stage.screenStream}</span>
+                  </div>
+                  <span className="text-xs text-slate-300 font-mono">
+                    StreamSyncRoom.tsx
+                  </span>
+                </div>
+              )}
+
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-indigo-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-10">
+                <span className="px-3 py-1.5 rounded-xl bg-[#6366f1] text-white text-xs font-bold shadow-lg flex items-center gap-1.5">
+                  <Pin className="w-3.5 h-3.5" /> {t.stage.focusCenter}
                 </span>
               </div>
-            )}
 
-            {/* Hover overlay */}
-            <div className="absolute inset-0 bg-indigo-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-10">
-              <span className="px-3 py-1.5 rounded-xl bg-[#6366f1] text-white text-xs font-bold shadow-lg flex items-center gap-1.5">
-                <Pin className="w-3.5 h-3.5" /> {t.stage.focusCenter}
-              </span>
+              <div className="absolute top-3 left-3 bg-[#13131b]/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs text-white font-semibold flex items-center gap-1.5 border border-white/5 z-10">
+                <ScreenShare className="w-3.5 h-3.5 text-indigo-400" />
+                <span>{t.stage.screenStream}</span>
+              </div>
             </div>
-
-            <div className="absolute top-3 left-3 bg-[#13131b]/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs text-white font-semibold flex items-center gap-1.5 border border-white/5 z-10">
-              <ScreenShare className="w-3.5 h-3.5 text-indigo-400" />
-              <span>{t.stage.screenStream}</span>
-            </div>
-          </div>
+          )}
 
           {/* Tiles dos Participantes no Grid */}
           {participants.map((p) => {

@@ -20,9 +20,51 @@ import {
 import { Participant } from "../types/streamsync";
 import { useI18n } from "@/lib/i18n/context";
 
+function SidebarParticipant({
+  participant: p,
+  t,
+}: {
+  participant: Participant;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  return (
+    <div className="flex items-center justify-between px-2 py-1 rounded-md hover:bg-[#292932]/70 group cursor-pointer transition-colors">
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="relative w-5 h-5 rounded-full overflow-hidden shrink-0">
+          <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+          {p.isSpeaking && (
+            <span className="absolute inset-0 rounded-full border border-emerald-400 animate-ping opacity-75" />
+          )}
+        </div>
+        <span
+          className={`text-[12px] truncate ${
+            p.isSpeaking ? "text-emerald-300 font-semibold" : "text-[#c7c4d7]"
+          }`}
+        >
+          {p.name} {p.isYou && `(${t.common.you})`}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1 shrink-0">
+        {p.isScreenSharing && (
+          <span className="px-1 py-0.2 text-[9px] bg-red-500/20 text-red-400 font-bold uppercase rounded border border-red-500/30">
+            {t.common.live}
+          </span>
+        )}
+        {p.isMuted ? (
+          <MicOff className="w-3 h-3 text-red-400" />
+        ) : p.isSpeaking ? (
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 interface ChannelSidebarProps {
   serverName: string;
   activeChannelId: string;
+  connectedChannelId: string | null;
   onSelectChannel: (id: string, type: "text" | "voice") => void;
   onOpenCreateChannel: () => void;
   onOpenSettings: () => void;
@@ -31,12 +73,12 @@ interface ChannelSidebarProps {
   isDeafened: boolean;
   onToggleDeafen: () => void;
   participants: Participant[];
-  isInCall: boolean;
 }
 
 export default function ChannelSidebar({
   serverName,
   activeChannelId,
+  connectedChannelId,
   onSelectChannel,
   onOpenCreateChannel,
   onOpenSettings,
@@ -45,7 +87,6 @@ export default function ChannelSidebar({
   isDeafened,
   onToggleDeafen,
   participants,
-  isInCall,
 }: ChannelSidebarProps) {
   const { t } = useI18n();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -197,83 +238,76 @@ export default function ChannelSidebar({
           >
             <Volume2 className="w-4 h-4 text-[#adc6ff] shrink-0" />
             <span className="truncate flex-1">{t.navigation.voiceLounge}</span>
-            {isInCall && (
+            {connectedChannelId === "voice-lounge" && (
               <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 rounded border border-emerald-500/30">
                 {t.common.connected}
               </span>
             )}
           </button>
 
-          {/* Voice Lounge Connected Participants list */}
-          <div className="pl-6 pr-1 py-1 flex flex-col gap-1">
-            {participants.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center justify-between px-2 py-1 rounded-md hover:bg-[#292932]/70 group cursor-pointer transition-colors"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="relative w-5 h-5 rounded-full overflow-hidden shrink-0">
-                    <img
-                      src={p.avatar}
-                      alt={p.name}
-                      className="w-full h-full object-cover"
-                    />
-                    {p.isSpeaking && (
-                      <span className="absolute inset-0 rounded-full border border-emerald-400 animate-ping opacity-75" />
-                    )}
-                  </div>
-                  <span
-                    className={`text-[12px] truncate ${
-                      p.isSpeaking
-                        ? "text-emerald-300 font-semibold"
-                        : "text-[#c7c4d7]"
-                    }`}
-                  >
-                    {p.name} {p.isYou && `(${t.common.you})`}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1 shrink-0">
-                  {p.isScreenSharing && (
-                    <span className="px-1 py-0.2 text-[9px] bg-red-500/20 text-red-400 font-bold uppercase rounded border border-red-500/30">
-                      {t.common.live}
-                    </span>
-                  )}
-                  {p.isMuted ? (
-                    <MicOff className="w-3 h-3 text-red-400" />
-                  ) : p.isSpeaking ? (
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
+          {connectedChannelId === "voice-lounge" && (
+            <div className="pl-6 pr-1 py-1 flex flex-col gap-1">
+              {participants.map((p) => (
+                <SidebarParticipant key={p.id} participant={p} t={t} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Other Voice Channels */}
-        <button
-          onClick={() => onSelectChannel("gaming-squad", "voice")}
-          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[14px] transition-colors w-full text-left ${
-            activeChannelId === "gaming-squad"
-              ? "bg-[#34343d] text-white font-medium"
-              : "text-[#c7c4d7] hover:bg-[#292932] hover:text-[#e4e1ed]"
-          }`}
-        >
-          <Volume2 className="w-4 h-4 text-[#908fa0] shrink-0" />
-          <span className="truncate">{t.navigation.gamingSquad}</span>
-        </button>
+        <div className="flex flex-col gap-0.5">
+          <button
+            onClick={() => onSelectChannel("gaming-squad", "voice")}
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[14px] transition-colors w-full text-left ${
+              activeChannelId === "gaming-squad"
+                ? "bg-[#34343d] text-white font-medium"
+                : "text-[#c7c4d7] hover:bg-[#292932] hover:text-[#e4e1ed]"
+            }`}
+          >
+            <Volume2 className="w-4 h-4 text-[#908fa0] shrink-0" />
+            <span className="truncate flex-1">{t.navigation.gamingSquad}</span>
+            {connectedChannelId === "gaming-squad" && (
+              <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 rounded border border-emerald-500/30">
+                {t.common.connected}
+              </span>
+            )}
+          </button>
 
-        <button
-          onClick={() => onSelectChannel("stage-stream", "voice")}
-          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[14px] transition-colors w-full text-left ${
-            activeChannelId === "stage-stream"
-              ? "bg-[#34343d] text-white font-medium"
-              : "text-[#c7c4d7] hover:bg-[#292932] hover:text-[#e4e1ed]"
-          }`}
-        >
-          <Radio className="w-4 h-4 text-[#ffb783] shrink-0" />
-          <span className="truncate">{t.navigation.stageKeynote}</span>
-        </button>
+          {connectedChannelId === "gaming-squad" && (
+            <div className="pl-6 pr-1 py-1 flex flex-col gap-1">
+              {participants.map((p) => (
+                <SidebarParticipant key={p.id} participant={p} t={t} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-0.5">
+          <button
+            onClick={() => onSelectChannel("stage-stream", "voice")}
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[14px] transition-colors w-full text-left ${
+              activeChannelId === "stage-stream"
+                ? "bg-[#34343d] text-white font-medium"
+                : "text-[#c7c4d7] hover:bg-[#292932] hover:text-[#e4e1ed]"
+            }`}
+          >
+            <Radio className="w-4 h-4 text-[#ffb783] shrink-0" />
+            <span className="truncate flex-1">{t.navigation.stageKeynote}</span>
+            {connectedChannelId === "stage-stream" && (
+              <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 rounded border border-emerald-500/30">
+                {t.common.connected}
+              </span>
+            )}
+          </button>
+
+          {connectedChannelId === "stage-stream" && (
+            <div className="pl-6 pr-1 py-1 flex flex-col gap-1">
+              {participants.map((p) => (
+                <SidebarParticipant key={p.id} participant={p} t={t} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* User Status Bar */}

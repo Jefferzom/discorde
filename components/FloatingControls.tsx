@@ -16,6 +16,8 @@ import {
   Radio
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/context";
+import ScreenShareMenu from "./ScreenShareMenu";
+import { ScreenShareMode } from "@/lib/screenShare";
 
 interface FloatingControlsProps {
   isVideoOn: boolean;
@@ -23,7 +25,9 @@ interface FloatingControlsProps {
   isMuted: boolean;
   onToggleMute: () => void;
   isScreenSharing: boolean;
+  screenShareMode?: ScreenShareMode;
   onToggleScreenShare: () => void;
+  onChangeScreenShareMode?: (mode: ScreenShareMode) => void;
   onLeaveCall: () => void;
   onSendReaction: (emoji: string) => void;
   onOpenSettings: () => void;
@@ -35,7 +39,9 @@ export default function FloatingControls({
   isMuted,
   onToggleMute,
   isScreenSharing,
+  screenShareMode = "screen",
   onToggleScreenShare,
+  onChangeScreenShareMode,
   onLeaveCall,
   onSendReaction,
   onOpenSettings,
@@ -128,6 +134,13 @@ export default function FloatingControls({
       <div className="w-px h-6 bg-[#464554]/60 mx-0.5" />
 
       {/* Screen Share Button */}
+      {isScreenSharing && onChangeScreenShareMode ? (
+        <ScreenShareMenu
+          currentMode={screenShareMode}
+          onChangeMode={onChangeScreenShareMode}
+        />
+      ) : null}
+
       <button
         onClick={onToggleScreenShare}
         className={`px-5 py-2.5 rounded-full font-semibold text-xs flex items-center gap-2 transition-all duration-150 shadow-lg ${
