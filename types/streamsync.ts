@@ -28,6 +28,7 @@ export interface Server {
   icon: string;
   unreadCount?: number;
   hasMention?: boolean;
+  hasNotification?: boolean;
 }
 
 export interface Channel {

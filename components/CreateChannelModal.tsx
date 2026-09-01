@@ -3,19 +3,18 @@
 import React, { useState } from "react";
 import {
   X,
-  Hash,
   Volume2,
+  Hash,
   Radio,
   Lock,
-  Sparkles,
-  Sliders,
-  Check
+  Sparkles
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n/context";
 
 interface CreateChannelModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateChannel: (name: string, type: "text" | "voice" | "stage") => void;
+  onCreateChannel: (name: string, type: "text" | "voice") => void;
 }
 
 export default function CreateChannelModal({
@@ -23,123 +22,95 @@ export default function CreateChannelModal({
   onClose,
   onCreateChannel,
 }: CreateChannelModalProps) {
-  const [channelType, setChannelType] = useState<"text" | "voice" | "stage">("voice");
+  const { t } = useI18n();
+  const [channelType, setChannelType] = useState<"text" | "voice">("voice");
   const [channelName, setChannelName] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
-  const [bitrate, setBitrate] = useState(64);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!channelName.trim()) return;
-    const formatted = channelName.toLowerCase().replace(/\s+/g, "-");
-    onCreateChannel(formatted, channelType);
+    onCreateChannel(channelName.trim().toLowerCase().replace(/\s+/g, "-"), channelType);
     setChannelName("");
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-      <div className="bg-[#1b1b23] border border-[#292932] rounded-3xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-5 animate-in zoom-in-95 duration-200">
-        {/* Modal Header */}
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
+      <div className="bg-[#1b1b23] border border-[#292932] rounded-3xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-6 animate-in zoom-in-95 duration-200">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white tracking-tight">
-            Create Channel
+          <h2 className="text-xl font-bold text-white tracking-tight">
+            {t.modal.createChannelTitle}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-[#c7c4d7] hover:bg-[#292932] hover:text-white transition-colors"
+            className="p-1 rounded-full text-[#c7c4d7] hover:bg-[#292932] hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           {/* Channel Type Selector */}
           <div className="flex flex-col gap-2">
-            <label className="text-[11px] font-bold text-[#908fa0] uppercase tracking-wider">
-              Channel Type
+            <label className="text-xs font-semibold text-[#c7c4d7] uppercase tracking-wider">
+              {t.modal.channelType}
             </label>
+
             <div className="flex flex-col gap-2">
+              {/* Voice Option */}
               <div
                 onClick={() => setChannelType("voice")}
-                className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-all ${
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center gap-3.5 ${
                   channelType === "voice"
-                    ? "bg-[#292932] border-[#6366f1] text-white"
-                    : "bg-[#13131b] border-transparent text-[#c7c4d7] hover:bg-[#22222d]"
+                    ? "bg-[#292932] border-[#6366f1] text-white ring-1 ring-[#6366f1]"
+                    : "bg-[#13131b] border-[#292932] text-[#c7c4d7] hover:bg-[#22222d]"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <Volume2 className="w-5 h-5 text-[#adc6ff]" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold">Voice & Video</span>
-                    <span className="text-[10px] text-[#908fa0]">
-                      Hang out together with voice, video, and screen share
-                    </span>
+                <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+                  <Volume2 className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-white">{t.modal.voiceAndVideo}</div>
+                  <div className="text-xs text-[#908fa0]">
+                    {t.modal.voiceAndVideoDesc}
                   </div>
                 </div>
-                {channelType === "voice" && (
-                  <Check className="w-4 h-4 text-[#6366f1]" />
-                )}
               </div>
 
+              {/* Text Option */}
               <div
                 onClick={() => setChannelType("text")}
-                className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-all ${
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center gap-3.5 ${
                   channelType === "text"
-                    ? "bg-[#292932] border-[#6366f1] text-white"
-                    : "bg-[#13131b] border-transparent text-[#c7c4d7] hover:bg-[#22222d]"
+                    ? "bg-[#292932] border-[#6366f1] text-white ring-1 ring-[#6366f1]"
+                    : "bg-[#13131b] border-[#292932] text-[#c7c4d7] hover:bg-[#22222d]"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <Hash className="w-5 h-5 text-[#908fa0]" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold">Text</span>
-                    <span className="text-[10px] text-[#908fa0]">
-                      Post messages, images, memes, opinions, and puns
-                    </span>
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+                  <Hash className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-white">{t.modal.text}</div>
+                  <div className="text-xs text-[#908fa0]">
+                    {t.modal.textDesc}
                   </div>
                 </div>
-                {channelType === "text" && (
-                  <Check className="w-4 h-4 text-[#6366f1]" />
-                )}
-              </div>
-
-              <div
-                onClick={() => setChannelType("stage")}
-                className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-all ${
-                  channelType === "stage"
-                    ? "bg-[#292932] border-[#6366f1] text-white"
-                    : "bg-[#13131b] border-transparent text-[#c7c4d7] hover:bg-[#22222d]"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Radio className="w-5 h-5 text-[#ffb783]" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold">Stage Keynote</span>
-                    <span className="text-[10px] text-[#908fa0]">
-                      Present to a large audience with designated speakers
-                    </span>
-                  </div>
-                </div>
-                {channelType === "stage" && (
-                  <Check className="w-4 h-4 text-[#6366f1]" />
-                )}
               </div>
             </div>
           </div>
 
           {/* Channel Name Input */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-bold text-[#908fa0] uppercase tracking-wider">
-              Channel Name
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold text-[#c7c4d7] uppercase tracking-wider">
+              {t.modal.channelName}
             </label>
-            <div className="flex items-center bg-[#13131b] border border-[#292932] rounded-xl px-3 py-2 focus-within:border-[#6366f1] transition-colors">
+            <div className="flex items-center bg-[#13131b] border border-[#292932] rounded-xl px-3 py-2.5 focus-within:border-[#6366f1] transition-colors">
               {channelType === "voice" ? (
                 <Volume2 className="w-4 h-4 text-[#908fa0] mr-2" />
-              ) : channelType === "stage" ? (
-                <Radio className="w-4 h-4 text-[#ffb783] mr-2" />
               ) : (
                 <Hash className="w-4 h-4 text-[#908fa0] mr-2" />
               )}
@@ -148,22 +119,20 @@ export default function CreateChannelModal({
                 placeholder="new-channel"
                 value={channelName}
                 onChange={(e) => setChannelName(e.target.value)}
-                required
-                className="bg-transparent text-xs text-white placeholder:text-[#908fa0] focus:outline-none flex-1"
+                className="flex-1 bg-transparent text-sm text-white placeholder:text-[#908fa0] focus:outline-none"
+                autoFocus
               />
             </div>
           </div>
 
-          {/* Private Channel Toggle */}
-          <div className="flex items-center justify-between p-3 bg-[#13131b] rounded-2xl border border-[#292932]">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-[#ffb783]" />
+          {/* Private Toggle */}
+          <div className="flex items-center justify-between p-3.5 bg-[#13131b] rounded-2xl border border-[#292932]">
+            <div className="flex items-center gap-3">
+              <Lock className="w-4 h-4 text-[#908fa0]" />
               <div className="flex flex-col">
-                <span className="text-xs font-semibold text-white">
-                  Private Channel
-                </span>
+                <span className="text-xs font-semibold text-white">{t.modal.privateChannel}</span>
                 <span className="text-[10px] text-[#908fa0]">
-                  Only selected members and roles will be able to view
+                  {t.modal.privateChannelDesc}
                 </span>
               </div>
             </div>
@@ -183,20 +152,24 @@ export default function CreateChannelModal({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 mt-2">
+          <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-[#c7c4d7] hover:text-white hover:bg-[#292932] transition-colors"
+              className="px-4 py-2 text-xs font-semibold text-[#c7c4d7] hover:text-white transition-colors"
             >
-              Cancel
+              {t.modal.cancel}
             </button>
             <button
               type="submit"
               disabled={!channelName.trim()}
-              className="px-5 py-2.5 rounded-xl bg-[#6366f1] hover:bg-[#8083ff] text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all shadow-lg ${
+                channelName.trim()
+                  ? "bg-[#6366f1] text-white hover:bg-[#8083ff] shadow-indigo-600/30"
+                  : "bg-[#292932] text-[#908fa0] cursor-not-allowed"
+              }`}
             >
-              Create Channel
+              {t.modal.confirmCreate}
             </button>
           </div>
         </form>

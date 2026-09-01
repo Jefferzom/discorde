@@ -13,9 +13,11 @@ import CreateChannelModal from "@/components/CreateChannelModal";
 import SettingsModal from "@/components/SettingsModal";
 import { Participant, ChatMessage } from "@/types/streamsync";
 import { Hash, Send, Smile, Paperclip, AlertCircle } from "lucide-react";
+import { useI18n } from "@/lib/i18n/context";
 
 export default function StreamSyncHub() {
   const router = useRouter();
+  const { t } = useI18n();
   const [activeServerId, setActiveServerId] = useState("gaming");
   const [activeChannelId, setActiveChannelId] = useState("voice-lounge");
   const [channelType, setChannelType] = useState<"text" | "voice" | "stage">("voice");
@@ -72,21 +74,21 @@ export default function StreamSyncHub() {
         setIsCameraOn(true);
       } else {
         console.log("[StreamSync] Desligando câmera...");
-        if (localVideoStream) {
-          localVideoStream.getTracks().forEach((track) => track.stop());
+        if (localVideoStreamRef.current) {
+          localVideoStreamRef.current.getTracks().forEach((track: MediaStreamTrack) => track.stop());
         }
         setLocalVideoStream(null);
         setIsCameraOn(false);
       }
     } catch (err: any) {
       console.error("[StreamSync] Erro ao acessar câmera:", err);
-      let msg = "Não foi possível ligar a câmera.";
+      let msg = t.errors.genericMediaError;
       if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-        msg = "Permissão negada. Clique no ícone de câmera/cadeado na barra de endereços para permitir o acesso.";
+        msg = t.errors.permissionDenied;
       } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
-        msg = "Nenhuma câmera física ou virtual detectada no dispositivo.";
+        msg = t.errors.noCameraFound;
       } else if (err?.name === "NotReadableError" || err?.name === "TrackStartError") {
-        msg = "A câmera já está em uso por outro aplicativo.";
+        msg = t.errors.cameraInUse;
       } else if (err?.message) {
         msg = err.message;
       }
@@ -119,11 +121,10 @@ export default function StreamSyncHub() {
       }
     } catch (err) {
       console.info("[StreamSync] Compartilhamento de tela cancelado:", err);
-      stopScreenShare();
     }
   };
 
-  // Refs de Streams para evitar interrupções indevidas
+  // Refs de Streams
   const localVideoStreamRef = useRef<MediaStream | null>(null);
   const screenShareStreamRef = useRef<MediaStream | null>(null);
 
@@ -147,7 +148,7 @@ export default function StreamSyncHub() {
     setIsMicOn((prev) => !prev);
   };
 
-  // Cleanup de streams EXCLUSIVAMENTE ao desmontar
+  // Cleanup de streams
   useEffect(() => {
     return () => {
       if (localVideoStreamRef.current) {
@@ -203,7 +204,6 @@ export default function StreamSyncHub() {
     },
   ]);
 
-  // Sincroniza estado de Alex (Você)
   useEffect(() => {
     setParticipants((prev) =>
       prev.map((p) =>
@@ -272,14 +272,14 @@ export default function StreamSyncHub() {
 
   return (
     <div className="h-screen w-screen overflow-hidden flex bg-[#13131b] text-[#e4e1ed] relative">
-      {/* 1. Left Primary Server Rail (72px) */}
+      {/* 1. Left Primary Server Rail */}
       <ServerRail
         activeServerId={activeServerId}
         onSelectServer={(id) => setActiveServerId(id)}
         onOpenCreateServer={handleCreateRoom}
       />
 
-      {/* 2. Secondary Channel Sidebar (240px) */}
+      {/* 2. Secondary Channel Sidebar */}
       <ChannelSidebar
         serverName={currentServer.name}
         activeChannelId={activeChannelId}
@@ -297,7 +297,7 @@ export default function StreamSyncHub() {
         isInCall={isInCall}
       />
 
-      {/* 3. Main Stage Content Area (ml-[312px]) */}
+      {/* 3. Main Stage Content Area */}
       <main className="flex-1 ml-[312px] flex flex-col bg-[#13131b] relative min-w-0 h-screen overflow-hidden">
         {/* Top App Bar */}
         <div className="flex flex-col">
@@ -333,7 +333,6 @@ export default function StreamSyncHub() {
         <div className="flex-1 flex overflow-hidden relative">
           {channelType === "voice" ? (
             isInCall ? (
-              /* ACTIVE VOICE CALL STAGE */
               <div className="flex-1 flex flex-col relative h-full overflow-hidden">
                 <CallStage
                   participants={participants}
@@ -347,7 +346,6 @@ export default function StreamSyncHub() {
                   onStartScreenShare={toggleScreenShare}
                 />
 
-                {/* Floating Bottom Control Bar */}
                 <FloatingControls
                   isVideoOn={isCameraOn}
                   onToggleVideo={toggleCamera}
@@ -357,8 +355,8 @@ export default function StreamSyncHub() {
                   onToggleScreenShare={toggleScreenShare}
                   onLeaveCall={() => {
                     stopScreenShare();
-                    if (localVideoStream) {
-                      localVideoStream.getTracks().forEach((track) => track.stop());
+                    if (localVideoStreamRef.current) {
+                      localVideoStreamRef.current.getTracks().forEach((track: MediaStreamTrack) => track.stop());
                     }
                     setIsInCall(false);
                   }}
@@ -367,7 +365,6 @@ export default function StreamSyncHub() {
                 />
               </div>
             ) : (
-              /* PRE-JOIN LOBBY */
               <PreJoinLobby
                 channelName={activeChannelId}
                 onJoinCall={() => setIsInCall(true)}
@@ -387,10 +384,10 @@ export default function StreamSyncHub() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">
-                    Welcome to #{activeChannelId}!
+                    {t.chat.welcomeTitle} #{activeChannelId}!
                   </h3>
                   <p className="text-xs text-[#908fa0]">
-                    This is the start of the #{activeChannelId} channel on {currentServer.name}.
+                    {t.chat.welcomeDesc} {currentServer.name}.
                   </p>
                 </div>
               </div>
@@ -439,7 +436,7 @@ export default function StreamSyncHub() {
 
                   <input
                     type="text"
-                    placeholder={`Message #${activeChannelId}...`}
+                    placeholder={`${t.chat.messagePlaceholder} #${activeChannelId}...`}
                     value={textChannelInput}
                     onChange={(e) => setTextChannelInput(e.target.value)}
                     className="flex-1 bg-transparent text-sm text-[#e4e1ed] placeholder:text-[#908fa0] focus:outline-none"

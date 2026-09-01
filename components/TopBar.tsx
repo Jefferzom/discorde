@@ -9,12 +9,13 @@ import {
   Tv,
   MessageSquare,
   Users,
-  Bell,
   Pin,
   Sparkles,
   Radio,
-  Maximize2
+  Maximize2,
+  Languages
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n/context";
 
 interface TopBarProps {
   channelName: string;
@@ -41,6 +42,8 @@ export default function TopBar({
   isInCall,
   onToggleFullscreen,
 }: TopBarProps) {
+  const { t, language, setLanguage } = useI18n();
+
   return (
     <header className="h-12 w-full bg-[#1f1f27] border-b border-[#292932] flex items-center justify-between px-4 z-10 shadow-sm shrink-0">
       {/* Left: Channel Info */}
@@ -61,7 +64,7 @@ export default function TopBar({
         {isInCall && channelType === "voice" && (
           <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>RTC Connected • 1080p 60fps</span>
+            <span>{t.common.rtcConnected}</span>
           </div>
         )}
 
@@ -69,16 +72,26 @@ export default function TopBar({
 
         <div className="hidden md:flex items-center gap-3 text-[13px] text-[#c7c4d7]">
           <span className="hover:text-white cursor-pointer transition-colors flex items-center gap-1">
-            <Pin className="w-3.5 h-3.5" /> Pinned Notes
+            <Pin className="w-3.5 h-3.5" /> {t.common.pinnedNotes}
           </span>
           <span className="hover:text-white cursor-pointer transition-colors flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-[#ffb783]" /> Threads
+            <Sparkles className="w-3.5 h-3.5 text-[#ffb783]" /> {t.common.threads}
           </span>
         </div>
       </div>
 
       {/* Right: Actions & Tools */}
       <div className="flex items-center gap-2">
+        {/* Language Switcher Quick Pill */}
+        <button
+          onClick={() => setLanguage(language === "pt" ? "en" : "pt")}
+          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#13131b] border border-[#292932] hover:border-[#6366f1] text-[11px] font-mono text-[#c7c4d7] hover:text-white transition-colors"
+          title={language === "pt" ? "Switch to English" : "Mudar para Português"}
+        >
+          <Languages className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="font-bold uppercase">{language}</span>
+        </button>
+
         {/* Stage vs Grid toggle if in voice call */}
         {channelType === "voice" && isInCall && (
           <div className="flex items-center bg-[#13131b] p-0.5 rounded-lg border border-[#34343d]">
@@ -89,10 +102,10 @@ export default function TopBar({
                   ? "bg-[#6366f1] text-white shadow-sm"
                   : "text-[#c7c4d7] hover:text-white"
               }`}
-              title="Focus Stage / Screen Share"
+              title={t.stage.stageView}
             >
               <Tv className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Stage</span>
+              <span className="hidden sm:inline">{t.stage.stageView}</span>
             </button>
             <button
               onClick={onToggleViewMode}
@@ -101,10 +114,10 @@ export default function TopBar({
                   ? "bg-[#6366f1] text-white shadow-sm"
                   : "text-[#c7c4d7] hover:text-white"
               }`}
-              title="Grid View (All Webcams)"
+              title={t.stage.gridView}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Grid</span>
+              <span className="hidden sm:inline">{t.stage.gridView}</span>
             </button>
           </div>
         )}
@@ -113,7 +126,7 @@ export default function TopBar({
         <div className="relative hidden lg:block">
           <input
             type="text"
-            placeholder="Search channel"
+            placeholder={t.common.searchPlaceholder}
             className="bg-[#13131b] text-[13px] text-[#e4e1ed] placeholder:text-[#908fa0] border border-[#292932] rounded-lg py-1 pl-2.5 pr-7 w-36 focus:w-48 focus:border-[#6366f1] focus:outline-none transition-all duration-200"
           />
           <Search className="w-3.5 h-3.5 text-[#908fa0] absolute right-2.5 top-2" />
@@ -127,7 +140,7 @@ export default function TopBar({
               ? "bg-[#6366f1] text-white shadow-sm"
               : "text-[#c7c4d7] hover:bg-[#292932] hover:text-white"
           }`}
-          title="Toggle In-Call Chat"
+          title={t.chat.channelChat}
         >
           <MessageSquare className="w-4 h-4" />
           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400" />
@@ -140,7 +153,7 @@ export default function TopBar({
               ? "bg-[#34343d] text-white"
               : "text-[#c7c4d7] hover:bg-[#292932] hover:text-white"
           }`}
-          title="Member List"
+          title={t.chat.onlineMembers}
         >
           <Users className="w-4 h-4" />
         </button>
@@ -148,7 +161,7 @@ export default function TopBar({
         <button
           onClick={onToggleFullscreen}
           className="p-1.5 rounded-lg text-[#c7c4d7] hover:bg-[#292932] hover:text-white transition-colors"
-          title="Fullscreen"
+          title={t.stage.fullscreen}
         >
           <Maximize2 className="w-4 h-4" />
         </button>

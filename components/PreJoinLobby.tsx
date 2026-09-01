@@ -7,15 +7,14 @@ import {
   Mic,
   MicOff,
   Volume2,
-  Settings,
   Sparkles,
   Users,
   ShieldCheck,
   ChevronRight,
-  Headphones,
   CheckCircle2
 } from "lucide-react";
 import { Participant } from "../types/streamsync";
+import { useI18n } from "@/lib/i18n/context";
 
 interface PreJoinLobbyProps {
   channelName: string;
@@ -36,6 +35,7 @@ export default function PreJoinLobby({
   isMuted,
   onToggleMute,
 }: PreJoinLobbyProps) {
+  const { t } = useI18n();
   const [micLevel, setMicLevel] = useState(40);
   const [bgBlur, setBgBlur] = useState(true);
 
@@ -77,7 +77,7 @@ export default function PreJoinLobby({
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <span className="text-xs text-[#908fa0]">Camera is turned off</span>
+                <span className="text-xs text-[#908fa0]">{t.stage.cameraOff}</span>
               </div>
             )}
 
@@ -90,7 +90,7 @@ export default function PreJoinLobby({
                     ? "bg-[#6366f1] text-white"
                     : "bg-[#292932] text-red-400 hover:text-white"
                 }`}
-                title="Toggle Camera"
+                title={isVideoOn ? t.controls.turnOffCamera : t.controls.turnOnCamera}
               >
                 {isVideoOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
               </button>
@@ -102,7 +102,7 @@ export default function PreJoinLobby({
                     ? "bg-[#6366f1] text-white"
                     : "bg-[#292932] text-red-400 hover:text-white"
                 }`}
-                title="Toggle Mic"
+                title={isMuted ? t.controls.unmuteMicrophone : t.controls.muteMicrophone}
               >
                 {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </button>
@@ -114,7 +114,7 @@ export default function PreJoinLobby({
                     ? "bg-emerald-600 text-white"
                     : "bg-[#292932] text-[#c7c4d7]"
                 }`}
-                title="Background Blur"
+                title={t.lobby.bgBlur}
               >
                 <Sparkles className="w-4 h-4" />
               </button>
@@ -126,8 +126,8 @@ export default function PreJoinLobby({
             <Mic className={`w-4 h-4 ${isMuted ? "text-red-400" : "text-emerald-400"}`} />
             <div className="flex-1 flex flex-col gap-1">
               <div className="flex justify-between text-[11px] text-[#908fa0]">
-                <span>Microphone Level</span>
-                <span>{isMuted ? "Muted" : `${micLevel}%`}</span>
+                <span>{t.lobby.micLevel}</span>
+                <span>{isMuted ? t.navigation.muteMic : `${micLevel}%`}</span>
               </div>
               <div className="w-full h-1.5 bg-[#292932] rounded-full overflow-hidden">
                 <div
@@ -144,7 +144,7 @@ export default function PreJoinLobby({
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
               <Volume2 className="w-4 h-4" />
-              <span>Voice Channel Preview</span>
+              <span>{t.lobby.voiceChannelPreview}</span>
             </div>
 
             <h2 className="text-2xl font-bold text-white tracking-tight">
@@ -152,7 +152,7 @@ export default function PreJoinLobby({
             </h2>
 
             <p className="text-xs text-[#c7c4d7] leading-relaxed">
-              StreamSync High-Definition 1080p60 voice & video channel with spatial audio and Krisp noise cancellation.
+              {t.lobby.lobbyDesc}
             </p>
 
             {/* Who is already in this room */}
@@ -160,9 +160,9 @@ export default function PreJoinLobby({
               <div className="flex items-center justify-between text-xs text-[#908fa0]">
                 <span className="flex items-center gap-1.5 font-medium">
                   <Users className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Already in call ({participants.length})</span>
+                  <span>{t.lobby.alreadyInCall} ({participants.length})</span>
                 </span>
-                <span className="text-emerald-400 text-[11px]">● Live</span>
+                <span className="text-emerald-400 text-[11px]">● {t.common.live}</span>
               </div>
 
               <div className="flex items-center gap-2 overflow-x-auto py-1">
@@ -191,17 +191,17 @@ export default function PreJoinLobby({
               onClick={onJoinCall}
               className="w-full py-3.5 px-6 rounded-2xl bg-[#6366f1] hover:bg-[#8083ff] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/50 hover:scale-[1.02] active:scale-[0.98]"
             >
-              <span>Join #{channelName}</span>
+              <span>{t.lobby.joinRoom} #{channelName}</span>
               <ChevronRight className="w-4 h-4" />
             </button>
 
             <div className="flex items-center justify-center gap-4 text-[11px] text-[#908fa0]">
               <span className="flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> End-to-End Encrypted
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> {t.lobby.encrypted}
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> Opus HD Audio
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> {t.lobby.opusAudio}
               </span>
             </div>
           </div>

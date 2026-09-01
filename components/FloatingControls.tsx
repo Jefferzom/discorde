@@ -11,12 +11,11 @@ import {
   PhoneOff,
   MoreVertical,
   Smile,
-  Sparkles,
   SlidersHorizontal,
-  Volume2,
   Shield,
   Radio
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n/context";
 
 interface FloatingControlsProps {
   isVideoOn: boolean;
@@ -41,6 +40,7 @@ export default function FloatingControls({
   onSendReaction,
   onOpenSettings,
 }: FloatingControlsProps) {
+  const { t } = useI18n();
   const [showReactions, setShowReactions] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
@@ -77,12 +77,12 @@ export default function FloatingControls({
             className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#292932] hover:text-white transition-colors"
           >
             <SlidersHorizontal className="w-4 h-4 text-indigo-400" />
-            <span>Audio & Video Settings</span>
+            <span>{t.controls.audioVideoSettings}</span>
           </button>
           <div className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-[#292932] transition-colors cursor-pointer">
             <span className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-emerald-400" />
-              <span>Krisp Noise Filter</span>
+              <span>{t.controls.krispNoise}</span>
             </span>
             <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold">
               ON
@@ -91,7 +91,7 @@ export default function FloatingControls({
           <div className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-[#292932] transition-colors cursor-pointer">
             <span className="flex items-center gap-2">
               <Radio className="w-4 h-4 text-[#ffb783]" />
-              <span>Stream Bitrate</span>
+              <span>{t.controls.streamBitrate}</span>
             </span>
             <span className="text-[10px] text-[#908fa0]">6,400 kbps</span>
           </div>
@@ -106,7 +106,7 @@ export default function FloatingControls({
             ? "bg-[#1f1f27] text-white hover:bg-[#34343d]"
             : "bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30"
         }`}
-        title={isVideoOn ? "Turn off camera" : "Turn on camera"}
+        title={isVideoOn ? t.controls.turnOffCamera : t.controls.turnOnCamera}
       >
         {isVideoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
       </button>
@@ -119,7 +119,7 @@ export default function FloatingControls({
             ? "bg-[#1f1f27] text-white hover:bg-[#34343d]"
             : "bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30"
         }`}
-        title={isMuted ? "Unmute microphone" : "Mute microphone"}
+        title={isMuted ? t.controls.unmuteMicrophone : t.controls.muteMicrophone}
       >
         {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
       </button>
@@ -135,17 +135,17 @@ export default function FloatingControls({
             ? "bg-[#8083ff] text-[#0d0096] hover:bg-[#c0c1ff] ring-2 ring-indigo-400/40"
             : "bg-[#1f1f27] text-[#e4e1ed] hover:bg-[#34343d]"
         }`}
-        title={isScreenSharing ? "Stop sharing screen" : "Share your screen"}
+        title={isScreenSharing ? t.controls.stopSharing : t.controls.shareScreen}
       >
         {isScreenSharing ? (
           <>
             <StopCircle className="w-4 h-4 animate-pulse text-indigo-950" />
-            <span>Stop Sharing</span>
+            <span>{t.controls.stopSharing}</span>
           </>
         ) : (
           <>
             <ScreenShare className="w-4 h-4 text-indigo-300" />
-            <span>Share Screen</span>
+            <span>{t.controls.shareScreen}</span>
           </>
         )}
       </button>
@@ -154,7 +154,7 @@ export default function FloatingControls({
       <button
         onClick={() => setShowReactions(!showReactions)}
         className="w-11 h-11 rounded-full bg-[#1f1f27] flex items-center justify-center text-[#e4e1ed] hover:bg-[#34343d] transition-colors shadow-md"
-        title="Send Reaction"
+        title={t.controls.sendReaction}
       >
         <Smile className="w-5 h-5 text-amber-300" />
       </button>
@@ -163,7 +163,7 @@ export default function FloatingControls({
       <button
         onClick={() => setShowMoreMenu(!showMoreMenu)}
         className="w-11 h-11 rounded-full bg-[#1f1f27] flex items-center justify-center text-[#e4e1ed] hover:bg-[#34343d] transition-colors shadow-md"
-        title="More Options"
+        title={t.controls.moreOptions}
       >
         <MoreVertical className="w-5 h-5 text-[#c7c4d7]" />
       </button>
@@ -172,7 +172,7 @@ export default function FloatingControls({
       <button
         onClick={onLeaveCall}
         className="w-11 h-11 rounded-full bg-[#93000a] text-white flex items-center justify-center hover:bg-red-600 transition-all duration-150 shadow-lg shadow-red-900/40 ml-1 group"
-        title="Disconnect from Voice Lounge"
+        title={t.controls.disconnect}
       >
         <PhoneOff className="w-5 h-5 group-hover:rotate-12 transition-transform" />
       </button>

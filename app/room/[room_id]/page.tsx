@@ -13,6 +13,7 @@ import CreateChannelModal from "@/components/CreateChannelModal";
 import SettingsModal from "@/components/SettingsModal";
 import { Participant, ChatMessage } from "@/types/streamsync";
 import { Copy, Check, Radio, AlertCircle } from "lucide-react";
+import { useI18n } from "@/lib/i18n/context";
 
 interface RoomPageProps {
   params: Promise<{ room_id: string }>;
@@ -20,6 +21,7 @@ interface RoomPageProps {
 
 export default function RoomPage({ params }: RoomPageProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const resolvedParams = use(params);
   const roomId = resolvedParams?.room_id;
 
@@ -66,7 +68,7 @@ export default function RoomPage({ params }: RoomPageProps) {
         console.log("[StreamSync] Solicitando permissão para câmera...");
         
         if (!navigator?.mediaDevices?.getUserMedia) {
-          throw new Error("Seu navegador ou ambiente não suporta navigator.mediaDevices.getUserMedia.");
+          throw new Error("Seu navegador não suporta navigator.mediaDevices.getUserMedia.");
         }
 
         let stream: MediaStream;
@@ -89,20 +91,20 @@ export default function RoomPage({ params }: RoomPageProps) {
       } else {
         console.log("[StreamSync] Desligando câmera local...");
         if (localVideoStreamRef.current) {
-          localVideoStreamRef.current.getTracks().forEach((track) => track.stop());
+          localVideoStreamRef.current.getTracks().forEach((track: MediaStreamTrack) => track.stop());
         }
         setLocalVideoStream(null);
         setIsCameraOn(false);
       }
     } catch (err: any) {
       console.error("[StreamSync] Erro ao acessar a câmera:", err);
-      let errorMsg = "Não foi possível ligar a câmera.";
+      let errorMsg = t.errors.genericMediaError;
       if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-        errorMsg = "Permissão negada. Clique no ícone de câmera/cadeado na barra de endereços do navegador para permitir o acesso.";
+        errorMsg = t.errors.permissionDenied;
       } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
-        errorMsg = "Nenhuma câmera encontrada no seu dispositivo.";
+        errorMsg = t.errors.noCameraFound;
       } else if (err?.name === "NotReadableError" || err?.name === "TrackStartError") {
-        errorMsg = "A câmera já está em uso por outro aplicativo ou navegador.";
+        errorMsg = t.errors.cameraInUse;
       } else if (err?.message) {
         errorMsg = err.message;
       }
@@ -122,7 +124,6 @@ export default function RoomPage({ params }: RoomPageProps) {
           audio: true,
         });
 
-        // Detecta quando o usuário clica em "Parar compartilhamento" na barra nativa do navegador
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack) {
           videoTrack.onended = () => {
@@ -149,12 +150,11 @@ export default function RoomPage({ params }: RoomPageProps) {
     setIsScreenSharing(false);
   };
 
-  // 5. Alternância de Microfone
   const toggleMic = () => {
     setIsMicOn((prev) => !prev);
   };
 
-  // 6. Cleanup de Streams EXCLUSIVAMENTE ao desmontar a página (sem parar a câmera ao trocar de tela)
+  // Cleanup de Streams ao desmontar a página
   useEffect(() => {
     return () => {
       if (localVideoStreamRef.current) {
@@ -166,7 +166,7 @@ export default function RoomPage({ params }: RoomPageProps) {
     };
   }, []);
 
-  // Estados de Interface e Chat
+  // Estados de Interface
   const [activeServerId, setActiveServerId] = useState("gaming");
   const [activeChannelId, setActiveChannelId] = useState("voice-lounge");
   const [channelType, setChannelType] = useState<"text" | "voice" | "stage">("voice");
@@ -226,7 +226,6 @@ export default function RoomPage({ params }: RoomPageProps) {
     },
   ]);
 
-  // Sincroniza estado de Alex (Você) com os controles de mídia
   useEffect(() => {
     setParticipants((prev) =>
       prev.map((p) =>
@@ -318,7 +317,7 @@ export default function RoomPage({ params }: RoomPageProps) {
 
       {/* 3. Main Stage Content Area */}
       <main className="flex-1 ml-[312px] flex flex-col bg-[#13131b] relative min-w-0 h-screen overflow-hidden">
-        {/* Top App Bar com Room ID e Feedback de Mídia */}
+        {/* Top App Bar */}
         <div className="flex flex-col">
           <TopBar
             channelName={activeChannelId}
@@ -345,18 +344,18 @@ export default function RoomPage({ params }: RoomPageProps) {
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono border border-indigo-500/30">
                 <Radio className="w-3 h-3 text-indigo-400 animate-pulse" />
-                <span>Room ID: <strong>{roomId}</strong></span>
+                <span>{t.common.roomId}: <strong>{roomId}</strong></span>
               </span>
 
               {isCameraOn && (
                 <span className="hidden md:inline-flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  ● Câmera Ativa
+                  ● {t.stage.cameraActive}
                 </span>
               )}
 
               {isScreenSharing && (
                 <span className="hidden md:inline-flex items-center gap-1 text-[11px] text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">
-                  ● Compartilhando Tela
+                  ● {t.stage.screenActive}
                 </span>
               )}
             </div>
@@ -368,18 +367,18 @@ export default function RoomPage({ params }: RoomPageProps) {
               {copied ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400 font-medium">Link Copiado!</span>
+                  <span className="text-emerald-400 font-medium">{t.common.copied}</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5" />
-                  <span>Copiar Link da Sala</span>
+                  <span>{t.common.copyLink}</span>
                 </>
               )}
             </button>
           </div>
 
-          {/* Banner de Erro de Permissão (se houver) */}
+          {/* Banner de Erro de Permissão */}
           {mediaError && (
             <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-1.5 flex items-center gap-2 text-xs text-red-400">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -392,7 +391,6 @@ export default function RoomPage({ params }: RoomPageProps) {
         <div className="flex-1 flex overflow-hidden relative">
           {isInCall ? (
             <div className="flex-1 flex flex-col relative h-full overflow-hidden">
-              {/* Stage com suporte a streams simultâneos de Câmera e Compartilhamento de Tela */}
               <CallStage
                 participants={participants}
                 viewMode={viewMode}
@@ -405,7 +403,6 @@ export default function RoomPage({ params }: RoomPageProps) {
                 onStartScreenShare={toggleScreenShare}
               />
 
-              {/* Controles Flutuantes com Feedback Visual */}
               <FloatingControls
                 isVideoOn={isCameraOn}
                 onToggleVideo={toggleCamera}
@@ -416,7 +413,7 @@ export default function RoomPage({ params }: RoomPageProps) {
                 onLeaveCall={() => {
                   stopScreenShare();
                   if (localVideoStreamRef.current) {
-                    localVideoStreamRef.current.getTracks().forEach((track) => track.stop());
+                    localVideoStreamRef.current.getTracks().forEach((track: MediaStreamTrack) => track.stop());
                   }
                   router.push("/");
                 }}
@@ -436,7 +433,6 @@ export default function RoomPage({ params }: RoomPageProps) {
             />
           )}
 
-          {/* Slide-in Chat / Member List Drawer */}
           <ChatDrawer
             isOpen={isChatOpen}
             showMemberList={isMemberListOpen}

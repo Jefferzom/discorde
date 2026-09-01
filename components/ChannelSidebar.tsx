@@ -14,12 +14,11 @@ import {
   Sparkles,
   ShieldCheck,
   Folder,
-  HelpCircle,
   Code2,
-  Bell,
-  MessageSquare
+  Bell
 } from "lucide-react";
 import { Participant } from "../types/streamsync";
+import { useI18n } from "@/lib/i18n/context";
 
 interface ChannelSidebarProps {
   serverName: string;
@@ -48,6 +47,7 @@ export default function ChannelSidebar({
   participants,
   isInCall,
 }: ChannelSidebarProps) {
+  const { t } = useI18n();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
@@ -80,7 +80,7 @@ export default function ChannelSidebar({
               }}
               className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-indigo-400 hover:bg-[#6366f1] hover:text-white transition-colors"
             >
-              <span>Create Channel</span>
+              <span>{t.navigation.createChannel}</span>
               <Plus className="w-4 h-4" />
             </button>
             <button
@@ -90,7 +90,7 @@ export default function ChannelSidebar({
               }}
               className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[#c7c4d7] hover:bg-[#292932] hover:text-white transition-colors"
             >
-              <span>Server Settings</span>
+              <span>{t.navigation.serverSettings}</span>
               <Settings className="w-4 h-4" />
             </button>
             <div className="h-px bg-[#292932] my-1" />
@@ -98,7 +98,7 @@ export default function ChannelSidebar({
               onClick={() => setDropdownOpen(false)}
               className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[#c7c4d7] hover:bg-[#292932] hover:text-white transition-colors"
             >
-              <span>Notification Settings</span>
+              <span>{t.navigation.notificationSettings}</span>
               <Bell className="w-4 h-4" />
             </button>
           </div>
@@ -110,12 +110,12 @@ export default function ChannelSidebar({
         {/* TEXT CHANNELS CATEGORY */}
         <div className="flex items-center justify-between px-2 pt-2 pb-1 text-[#908fa0] group">
           <span className="text-[11px] font-bold tracking-wider uppercase">
-            Text Channels
+            {t.navigation.textChannels}
           </span>
           <button
             onClick={onOpenCreateChannel}
             className="opacity-0 group-hover:opacity-100 hover:text-white transition-opacity"
-            title="Create Channel"
+            title={t.navigation.createChannel}
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
@@ -131,7 +131,7 @@ export default function ChannelSidebar({
           }`}
         >
           <Hash className="w-4 h-4 text-[#908fa0] shrink-0" />
-          <span className="truncate flex-1">general</span>
+          <span className="truncate flex-1">{t.navigation.general}</span>
           <span className="w-2 h-2 rounded-full bg-[#6366f1]" />
         </button>
 
@@ -144,7 +144,7 @@ export default function ChannelSidebar({
           }`}
         >
           <Sparkles className="w-4 h-4 text-[#ffb783] shrink-0" />
-          <span className="truncate">announcements</span>
+          <span className="truncate">{t.navigation.announcements}</span>
         </button>
 
         <button
@@ -156,7 +156,7 @@ export default function ChannelSidebar({
           }`}
         >
           <Code2 className="w-4 h-4 text-[#908fa0] shrink-0" />
-          <span className="truncate">dev-chat</span>
+          <span className="truncate">{t.navigation.devChat}</span>
         </button>
 
         <button
@@ -168,18 +168,18 @@ export default function ChannelSidebar({
           }`}
         >
           <Folder className="w-4 h-4 text-[#908fa0] shrink-0" />
-          <span className="truncate">resources</span>
+          <span className="truncate">{t.navigation.resources}</span>
         </button>
 
         {/* VOICE CHANNELS CATEGORY */}
         <div className="flex items-center justify-between px-2 pt-4 pb-1 text-[#908fa0] group">
           <span className="text-[11px] font-bold tracking-wider uppercase">
-            Voice Channels
+            {t.navigation.voiceChannels}
           </span>
           <button
             onClick={onOpenCreateChannel}
             className="opacity-0 group-hover:opacity-100 hover:text-white transition-opacity"
-            title="Create Voice Channel"
+            title={t.navigation.createChannel}
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
@@ -196,10 +196,10 @@ export default function ChannelSidebar({
             }`}
           >
             <Volume2 className="w-4 h-4 text-[#adc6ff] shrink-0" />
-            <span className="truncate flex-1">voice-lounge</span>
+            <span className="truncate flex-1">{t.navigation.voiceLounge}</span>
             {isInCall && (
               <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 rounded border border-emerald-500/30">
-                Connected
+                {t.common.connected}
               </span>
             )}
           </button>
@@ -229,14 +229,14 @@ export default function ChannelSidebar({
                         : "text-[#c7c4d7]"
                     }`}
                   >
-                    {p.name} {p.isYou && "(You)"}
+                    {p.name} {p.isYou && `(${t.common.you})`}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
                   {p.isScreenSharing && (
                     <span className="px-1 py-0.2 text-[9px] bg-red-500/20 text-red-400 font-bold uppercase rounded border border-red-500/30">
-                      Live
+                      {t.common.live}
                     </span>
                   )}
                   {p.isMuted ? (
@@ -260,7 +260,7 @@ export default function ChannelSidebar({
           }`}
         >
           <Volume2 className="w-4 h-4 text-[#908fa0] shrink-0" />
-          <span className="truncate">gaming-squad</span>
+          <span className="truncate">{t.navigation.gamingSquad}</span>
         </button>
 
         <button
@@ -272,7 +272,7 @@ export default function ChannelSidebar({
           }`}
         >
           <Radio className="w-4 h-4 text-[#ffb783] shrink-0" />
-          <span className="truncate">stage-keynote</span>
+          <span className="truncate">{t.navigation.stageKeynote}</span>
         </button>
       </div>
 
@@ -295,7 +295,7 @@ export default function ChannelSidebar({
               Alex
             </span>
             <span className="text-[10px] text-[#908fa0] truncate">
-              #1337 • Online
+              #1337 • {t.common.online}
             </span>
           </div>
         </div>
@@ -309,7 +309,7 @@ export default function ChannelSidebar({
                 ? "text-red-400 bg-red-500/10 hover:bg-red-500/20"
                 : "text-[#c7c4d7] hover:bg-[#292932] hover:text-white"
             }`}
-            title={isMuted ? "Unmute Mic" : "Mute Mic"}
+            title={isMuted ? t.navigation.unmuteMic : t.navigation.muteMic}
           >
             {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
           </button>
@@ -321,7 +321,7 @@ export default function ChannelSidebar({
                 ? "text-red-400 bg-red-500/10 hover:bg-red-500/20"
                 : "text-[#c7c4d7] hover:bg-[#292932] hover:text-white"
             }`}
-            title={isDeafened ? "Undeafen" : "Deafen"}
+            title={isDeafened ? t.navigation.undeafen : t.navigation.deafen}
           >
             <Headphones className="w-4 h-4" />
           </button>
@@ -329,7 +329,7 @@ export default function ChannelSidebar({
           <button
             onClick={onOpenSettings}
             className="p-1.5 rounded-lg text-[#c7c4d7] hover:bg-[#292932] hover:text-white transition-colors"
-            title="User Settings"
+            title={t.navigation.userSettings}
           >
             <Settings className="w-4 h-4" />
           </button>

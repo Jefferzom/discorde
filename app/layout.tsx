@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "Next-gen real-time voice, video & screen share hub built with Stitch MCP design system",
 };
 
+import { I18nProvider } from "@/lib/i18n/context";
+
 export default function RootLayout({
   children,
 }: {
@@ -25,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} ${jetbrainsMono.variable} bg-[#13131b] text-[#e4e1ed] antialiased`}>
-        {children}
+        <I18nProvider>{children}</I18nProvider>
       </body>
     </html>
   );

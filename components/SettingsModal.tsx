@@ -4,16 +4,14 @@ import React, { useState } from "react";
 import {
   X,
   Mic,
-  Volume2,
   Video,
   Shield,
-  Palette,
   Sparkles,
-  Sliders,
   Check,
-  RefreshCw,
-  Zap
+  Languages,
+  Globe
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n/context";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -27,12 +25,9 @@ interface SettingsModalProps {
 export default function SettingsModal({
   isOpen,
   onClose,
-  isMuted,
-  onToggleMute,
-  isVideoOn,
-  onToggleVideo,
 }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<"voice" | "video" | "stitch" | "profile">("voice");
+  const { t, language, setLanguage } = useI18n();
+  const [activeTab, setActiveTab] = useState<"voice" | "video" | "language" | "stitch" | "profile">("voice");
   const [inputVolume, setInputVolume] = useState(85);
   const [outputVolume, setOutputVolume] = useState(100);
   const [krispEnabled, setKrispEnabled] = useState(true);
@@ -46,7 +41,7 @@ export default function SettingsModal({
         {/* Settings Sidebar */}
         <div className="w-48 bg-[#13131b] p-4 flex flex-col gap-1 border-r border-[#292932] shrink-0">
           <span className="text-[10px] font-bold text-[#908fa0] uppercase tracking-wider px-2 mb-2">
-            Settings
+            {t.settings.title}
           </span>
 
           <button
@@ -58,7 +53,7 @@ export default function SettingsModal({
             }`}
           >
             <Mic className="w-4 h-4 text-indigo-400" />
-            <span>Voice & Audio</span>
+            <span>{t.settings.voiceAudio}</span>
           </button>
 
           <button
@@ -70,7 +65,19 @@ export default function SettingsModal({
             }`}
           >
             <Video className="w-4 h-4 text-emerald-400" />
-            <span>Video & Stream</span>
+            <span>{t.settings.videoStream}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("language")}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-colors ${
+              activeTab === "language"
+                ? "bg-[#292932] text-white border border-[#34343d]"
+                : "text-[#c7c4d7] hover:bg-[#1f1f27] hover:text-white"
+            }`}
+          >
+            <Languages className="w-4 h-4 text-cyan-400" />
+            <span>{t.settings.languageTab}</span>
           </button>
 
           <button
@@ -82,7 +89,7 @@ export default function SettingsModal({
             }`}
           >
             <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Stitch Design System</span>
+            <span>{t.settings.stitchDesign}</span>
           </button>
 
           <button
@@ -93,8 +100,8 @@ export default function SettingsModal({
                 : "text-[#c7c4d7] hover:bg-[#1f1f27] hover:text-white"
             }`}
           >
-            <Shield className="w-4 h-4 text-cyan-400" />
-            <span>User Profile</span>
+            <Shield className="w-4 h-4 text-purple-400" />
+            <span>{t.settings.userProfile}</span>
           </button>
 
           <div className="mt-auto pt-4 border-t border-[#292932]">
@@ -113,10 +120,60 @@ export default function SettingsModal({
             <X className="w-5 h-5" />
           </button>
 
+          {/* Tab: Idioma / Language */}
+          {activeTab === "language" && (
+            <div className="flex flex-col gap-5">
+              <div>
+                <h3 className="text-base font-bold text-white">{t.settings.selectLanguage}</h3>
+                <p className="text-xs text-[#908fa0]">
+                  O idioma base do navegador é detectado automaticamente.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <div
+                  onClick={() => setLanguage("pt")}
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
+                    language === "pt"
+                      ? "bg-[#292932] border-[#6366f1] text-white ring-1 ring-[#6366f1]"
+                      : "bg-[#13131b] border-[#292932] text-[#c7c4d7] hover:bg-[#22222d]"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🇧🇷</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold">{t.settings.portuguese}</span>
+                      <span className="text-[11px] text-[#908fa0]">Português nativo</span>
+                    </div>
+                  </div>
+                  {language === "pt" && <Check className="w-5 h-5 text-[#6366f1]" />}
+                </div>
+
+                <div
+                  onClick={() => setLanguage("en")}
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
+                    language === "en"
+                      ? "bg-[#292932] border-[#6366f1] text-white ring-1 ring-[#6366f1]"
+                      : "bg-[#13131b] border-[#292932] text-[#c7c4d7] hover:bg-[#22222d]"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🇺🇸</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold">{t.settings.english}</span>
+                      <span className="text-[11px] text-[#908fa0]">English interface</span>
+                    </div>
+                  </div>
+                  {language === "en" && <Check className="w-5 h-5 text-[#6366f1]" />}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === "voice" && (
             <div className="flex flex-col gap-5">
               <div>
-                <h3 className="text-base font-bold text-white">Voice & Audio Settings</h3>
+                <h3 className="text-base font-bold text-white">{t.settings.voiceAudio}</h3>
                 <p className="text-xs text-[#908fa0]">
                   Configure your microphone and speaker devices.
                 </p>
@@ -126,7 +183,7 @@ export default function SettingsModal({
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <div className="flex justify-between text-xs text-[#c7c4d7]">
-                    <span>Input Volume (Microphone)</span>
+                    <span>{t.settings.inputVolume}</span>
                     <span className="font-mono text-indigo-400">{inputVolume}%</span>
                   </div>
                   <input
@@ -141,7 +198,7 @@ export default function SettingsModal({
 
                 <div className="flex flex-col gap-1.5">
                   <div className="flex justify-between text-xs text-[#c7c4d7]">
-                    <span>Output Volume (Headset / Speakers)</span>
+                    <span>{t.settings.outputVolume}</span>
                     <span className="font-mono text-indigo-400">{outputVolume}%</span>
                   </div>
                   <input
@@ -161,10 +218,10 @@ export default function SettingsModal({
                   <Shield className="w-5 h-5 text-emerald-400" />
                   <div className="flex flex-col">
                     <span className="text-xs font-semibold text-white">
-                      Krisp Noise Cancellation
+                      {t.settings.krispTitle}
                     </span>
                     <span className="text-[10px] text-[#908fa0]">
-                      Removes background keyboard typing, fans, and room echo
+                      {t.settings.krispDesc}
                     </span>
                   </div>
                 </div>
@@ -187,7 +244,7 @@ export default function SettingsModal({
           {activeTab === "video" && (
             <div className="flex flex-col gap-5">
               <div>
-                <h3 className="text-base font-bold text-white">Video & Screen Quality</h3>
+                <h3 className="text-base font-bold text-white">{t.settings.videoStream}</h3>
                 <p className="text-xs text-[#908fa0]">
                   Set resolution and framerate for streams and camera.
                 </p>
@@ -195,7 +252,7 @@ export default function SettingsModal({
 
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-[#c7c4d7]">
-                  Stream Resolution Preset
+                  {t.settings.resolutionPreset}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
@@ -232,7 +289,7 @@ export default function SettingsModal({
           {activeTab === "stitch" && (
             <div className="flex flex-col gap-4">
               <div>
-                <h3 className="text-base font-bold text-white">Google Stitch MCP Integration</h3>
+                <h3 className="text-base font-bold text-white">{t.settings.stitchDesign}</h3>
                 <p className="text-xs text-[#908fa0]">
                   Connected to project: StreamSync Video Hub (`projects/7329526585811402395`)
                 </p>
@@ -264,7 +321,7 @@ export default function SettingsModal({
           {activeTab === "profile" && (
             <div className="flex flex-col gap-4">
               <div>
-                <h3 className="text-base font-bold text-white">User Profile</h3>
+                <h3 className="text-base font-bold text-white">{t.settings.userProfile}</h3>
                 <p className="text-xs text-[#908fa0]">
                   Your identity across servers and voice lounges.
                 </p>
