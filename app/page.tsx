@@ -7,11 +7,13 @@ import TopBar from "@/components/TopBar";
 import UserOnboardingModal from "@/components/UserOnboardingModal";
 import ChatDrawer from "@/components/ChatDrawer";
 import TextChannelChat from "@/components/TextChannelChat";
+import VoiceChannelIdle from "@/components/VoiceChannelIdle";
 import CreateChannelModal from "@/components/CreateChannelModal";
 import SettingsModal from "@/components/SettingsModal";
 import { useParticipantNotificationSounds } from "@/hooks/useParticipantNotificationSounds";
 import { useChannelNavigation } from "@/hooks/useChannelNavigation";
 import { useRoomSessionActions } from "@/hooks/useRoomSessionActions";
+import { useActiveRooms } from "@/hooks/useActiveRooms";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { useI18n } from "@/lib/i18n/context";
@@ -38,6 +40,8 @@ export default function StreamSyncHub() {
     handleJoinRoom,
     handleOnboardingRoomComplete,
   } = useRoomSessionActions({ isDeafened });
+
+  const { rooms, loading: roomsLoading } = useActiveRooms();
 
   const {
     activeServerId,
@@ -123,11 +127,22 @@ export default function StreamSyncHub() {
         </div>
 
         <div className="flex-1 flex overflow-hidden relative min-h-0">
-          <TextChannelChat
-            key={activeChannelId}
-            channelName={channelDisplayName}
-            serverName={currentServer.name}
-          />
+          {channelType === "voice" ? (
+            <VoiceChannelIdle
+              channelName={channelDisplayName}
+              rooms={rooms}
+              loading={roomsLoading}
+              creating={creatingRoom}
+              onCreateRoom={handleCreateRoom}
+              onJoinRoom={handleJoinRoom}
+            />
+          ) : (
+            <TextChannelChat
+              key={activeChannelId}
+              channelName={channelDisplayName}
+              serverName={currentServer.name}
+            />
+          )}
 
           <ChatDrawer
             isOpen={isChatOpen}

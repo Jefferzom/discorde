@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { deleteRoom, updateRoomName } from "@/lib/supabase/rooms";
-import { saveRoomNameLocal } from "@/lib/roomStorage";
+import { saveRoomNameLocal, removeRoomNameLocal } from "@/lib/roomStorage";
 import { notifyRoomsUpdated } from "@/lib/roomEvents";
 import { ensureRoomIsEmpty } from "@/lib/roomsApi";
 import { CurrentRoomError, RoomOccupiedError } from "@/lib/roomErrors";
@@ -30,6 +30,7 @@ export function useRoomManagement(currentRoomId?: string | null) {
 
       await ensureRoomIsEmpty(roomId);
       await deleteRoom(roomId);
+      removeRoomNameLocal(roomId);
       notifyRoomsUpdated();
     },
     [currentRoomId]

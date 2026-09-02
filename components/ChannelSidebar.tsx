@@ -199,7 +199,12 @@ export default function ChannelSidebar({
 
         <div className="flex flex-col gap-0.5">
           <button
-            onClick={() => onSelectChannel("voice-lounge", "voice")}
+            onClick={() => {
+              onSelectChannel("voice-lounge", "voice");
+              if (rooms.length > 0 && onJoinRoom) {
+                onJoinRoom(rooms[0].id);
+              }
+            }}
             className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[14px] transition-colors w-full text-left ${
               activeChannelId === "voice-lounge"
                 ? "bg-[#34343d] text-white font-medium"

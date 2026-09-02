@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchActiveRooms, type RoomRecord } from "@/lib/supabase/rooms";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { ROOMS_UPDATED_EVENT } from "@/lib/roomEvents";
+import { pruneRoomNamesLocal } from "@/lib/roomStorage";
 
 export function useActiveRooms() {
   const [rooms, setRooms] = useState<RoomRecord[]>([]);
@@ -23,6 +24,7 @@ export function useActiveRooms() {
 
     try {
       const data = await fetchActiveRooms();
+      pruneRoomNamesLocal(data.map((room) => room.id));
       setRooms(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar salas");

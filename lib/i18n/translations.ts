@@ -123,6 +123,7 @@ export const translations = {
       createRoomHint:
         "Para conversar por vídeo com outras pessoas, crie uma sala LiveKit ou abra um link de convite.",
       createRoomBtn: "Criar sala de vídeo",
+      pickRoom: "Escolha uma sala ativa para entrar:",
     },
     rooms: {
       activeTitle: "Salas Ativas",
@@ -325,6 +326,7 @@ export const translations = {
       createRoomHint:
         "To talk on video with others, create a LiveKit room or open an invite link.",
       createRoomBtn: "Create video room",
+      pickRoom: "Pick an active room to join:",
     },
     rooms: {
       activeTitle: "Active Rooms",
