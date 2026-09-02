@@ -29,6 +29,21 @@ export function clearIntentionalRoomNavigation(): void {
   sessionStorage.removeItem(INTENTIONAL_ROOM_NAV_KEY);
 }
 
+export const INTENTIONAL_DISCONNECT_KEY = "discorde_intentional_disconnect";
+
+export function markIntentionalDisconnect(): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(INTENTIONAL_DISCONNECT_KEY, "1");
+}
+
+export function consumeIntentionalDisconnect(): boolean {
+  if (typeof window === "undefined") return false;
+  const value = sessionStorage.getItem(INTENTIONAL_DISCONNECT_KEY);
+  if (!value) return false;
+  sessionStorage.removeItem(INTENTIONAL_DISCONNECT_KEY);
+  return true;
+}
+
 export function notifyRoomsUpdated(): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(ROOMS_UPDATED_EVENT));

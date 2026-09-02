@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { VideoTrack } from "@livekit/components-react";
+import { VideoTrack, useIsSpeaking } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-core";
 import { ExternalLink, GripVertical, Pin, X } from "lucide-react";
 import { popOutFromTrackRef } from "@/lib/popOutVideo";
@@ -30,6 +30,7 @@ export default function CameraPiPOverlay({
   const dragMoved = useRef(false);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [dragging, setDragging] = useState(false);
+  const isSpeaking = useIsSpeaking(trackRef.participant);
 
   const trackSid = trackRef.publication?.trackSid;
 
@@ -105,7 +106,11 @@ export default function CameraPiPOverlay({
   return (
     <div
       ref={containerRef}
-      className={`absolute z-20 w-44 sm:w-52 aspect-video rounded-xl overflow-hidden shadow-2xl border-2 border-indigo-500/50 bg-black ${
+      className={`absolute z-20 w-44 sm:w-52 aspect-video rounded-xl overflow-hidden shadow-2xl border-2 bg-black ${
+        isSpeaking
+          ? "border-emerald-400 ring-2 ring-emerald-400/70"
+          : "border-indigo-500/50"
+      } ${
         onSpotlight ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
       } ${dragging ? "ring-2 ring-indigo-400/60" : ""}`}
       style={

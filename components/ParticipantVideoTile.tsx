@@ -1,9 +1,10 @@
 "use client";
 
-import { VideoTrack, isTrackReference } from "@livekit/components-react";
+import { useState } from "react";
+import { VideoTrack, isTrackReference, useIsSpeaking } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import type { TrackReference } from "@livekit/components-core";
-import { ExternalLink, LayoutGrid, Columns2 } from "lucide-react";
+import { ExternalLink, LayoutGrid, Columns2, Volume2 } from "lucide-react";
 import { popOutFromTrackRef } from "@/lib/popOutVideo";
 
 interface ParticipantVideoTileProps {
@@ -18,6 +19,7 @@ interface ParticipantVideoTileProps {
   focusLabel?: string;
   variant?: "filmstrip" | "split" | "stage";
   badge?: string;
+  volumeLabel?: string;
 }
 
 export default function ParticipantVideoTile({
@@ -32,9 +34,13 @@ export default function ParticipantVideoTile({
   focusLabel,
   variant = "filmstrip",
   badge,
+  volumeLabel,
 }: ParticipantVideoTileProps) {
   const hasVideo = isTrackReference(trackRef) && Boolean(trackRef.publication?.track);
   const isScreenShare = trackRef.source === Track.Source.ScreenShare;
+  const isSpeaking = useIsSpeaking(trackRef.participant);
+  const [volume, setVolume] = useState(100);
+  const showVolume = !trackRef.participant.isLocal && !isScreenShare;
 
   const sizeClass =
     variant === "stage"
@@ -42,6 +48,14 @@ export default function ParticipantVideoTile({
       : variant === "split"
         ? "w-full h-full min-h-0"
         : "w-48 sm:w-56 h-full shrink-0";
+
+  const handleVolume = (value: number) => {
+    setVolume(value);
+    const participant = trackRef.participant;
+    if (!participant.isLocal && "setVolume" in participant) {
+      (participant as { setVolume: (v: number) => void }).setVolume(value / 100);
+    }
+  };
 
   return (
     <div
@@ -55,11 +69,13 @@ export default function ParticipantVideoTile({
         }
       }}
       className={`${sizeClass} bg-[#1f1f27] rounded-2xl overflow-hidden relative shadow-md border transition-all duration-200 group ${
-        isFocused
-          ? "border-[#6366f1] ring-2 ring-indigo-500/40"
-          : isScreenShare
-            ? "border-red-500/40 hover:border-red-400 cursor-pointer"
-            : "border-[#292932] hover:border-[#6366f1] cursor-pointer"
+        isSpeaking
+          ? "border-emerald-400 ring-2 ring-emerald-400/70 shadow-[0_0_20px_rgba(52,211,153,0.4)]"
+          : isFocused
+            ? "border-[#6366f1] ring-2 ring-indigo-500/40"
+            : isScreenShare
+              ? "border-red-500/40 hover:border-red-400 cursor-pointer"
+              : "border-[#292932] hover:border-[#6366f1] cursor-pointer"
       }`}
     >
       {hasVideo ? (
@@ -89,8 +105,8 @@ export default function ParticipantVideoTile({
         <ExternalLink className="w-3.5 h-3.5" />
       </button>
 
-      <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between z-10">
-        <div className="bg-[#13131b]/80 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/5">
+      <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-1 z-10">
+        <div className="bg-[#13131b]/80 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/5 self-start max-w-full">
           <span className="text-[11px] font-semibold text-white truncate max-w-[120px] block">
             {name}
             {isYou && youLabel && ` (${youLabel})`}
@@ -99,6 +115,25 @@ export default function ParticipantVideoTile({
             {isFocused && focusLabel && ` · ${focusLabel}`}
           </span>
         </div>
+        {showVolume && (
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#13131b]/90 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <Volume2 className="w-3 h-3 text-[#c7c4d7] shrink-0" />
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={volume}
+              onChange={(e) => handleVolume(Number(e.target.value))}
+              className="w-full accent-emerald-400 h-1 bg-[#292932] rounded-lg cursor-pointer"
+              title={volumeLabel}
+            />
+            <span className="text-[9px] text-[#908fa0] w-6 text-right">{volume}</span>
+          </div>
+        )}
       </div>
     </div>
   );

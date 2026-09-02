@@ -12,6 +12,9 @@ import CreateChannelModal from "@/components/CreateChannelModal";
 import SettingsModal from "@/components/SettingsModal";
 import UserOnboardingModal from "@/components/UserOnboardingModal";
 import CustomRoomLayout from "@/components/CustomRoomLayout";
+import PreJoinLobby, { type JoinMediaPrefs } from "@/components/PreJoinLobby";
+import LeaveCallModal from "@/components/LeaveCallModal";
+import { getLeaveWarning, type LeaveWarning } from "@/lib/leaveCall";
 import { Copy, Check, Radio, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/context";
 import { useParticipantNotificationSounds } from "@/hooks/useParticipantNotificationSounds";
@@ -26,6 +29,7 @@ import { useRoomContext } from "@livekit/components-react";
 import {
   clearIntentionalRoomNavigation,
   consumeIntentionalRoomNavigation,
+  markIntentionalDisconnect,
 } from "@/lib/roomEvents";
 import { canJoinVoiceRoom, type UserProfile } from "@/lib/userStorage";
 
@@ -77,6 +81,7 @@ function RoomConnectedLayout({
   const [isMemberListOpen, setIsMemberListOpen] = useState(false);
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [leaveWarning, setLeaveWarning] = useState<LeaveWarning | null>(null);
 
   const {
     activeServerId,
@@ -107,10 +112,21 @@ function RoomConnectedLayout({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDisconnectVoice = async () => {
+  const confirmDisconnect = async () => {
+    setLeaveWarning(null);
+    markIntentionalDisconnect();
     clearIntentionalRoomNavigation();
     await room.disconnect(true);
     router.push("/");
+  };
+
+  const handleDisconnectVoice = async () => {
+    const warning = getLeaveWarning(room);
+    if (warning) {
+      setLeaveWarning(warning);
+      return;
+    }
+    await confirmDisconnect();
   };
 
   const currentServer = servers.find((s) => s.id === activeServerId) || servers[1];
@@ -226,19 +242,34 @@ function RoomConnectedLayout({
         isVideoOn={isCameraOn}
         onToggleVideo={() => setIsCameraOn((prev) => !prev)}
       />
+
+      {leaveWarning && (
+        <LeaveCallModal
+          warning={leaveWarning}
+          onStay={() => setLeaveWarning(null)}
+          onConfirm={() => void confirmDisconnect()}
+        />
+      )}
     </>
   );
 }
 
 export default function RoomPage({ params }: RoomPageProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const resolvedParams = use(params);
   const roomId = resolvedParams?.room_id;
   const profile = useUserProfile();
   const mounted = useHasMounted();
 
   const prevRoomIdRef = useRef<string | null>(null);
-  const [isDeafened] = useState(false);
+  const [isDeafened, setIsDeafened] = useState(false);
+  const [isMicOn, setIsMicOn] = useState(true);
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [joinPrefsByRoom, setJoinPrefsByRoom] = useState<
+    Record<string, JoinMediaPrefs>
+  >({});
+  const [lobbySettingsOpen, setLobbySettingsOpen] = useState(false);
   const {
     creatingRoom,
     handleCreateRoom,
@@ -261,6 +292,8 @@ export default function RoomPage({ params }: RoomPageProps) {
     prevRoomIdRef.current = roomId;
   }, [roomId, router, isDeafened]);
 
+  const joinPrefs = roomId ? joinPrefsByRoom[roomId] ?? null : null;
+
   const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
 
   if (!roomId) return null;
@@ -279,12 +312,67 @@ export default function RoomPage({ params }: RoomPageProps) {
       />
 
       <div className="flex-1 ml-[72px] flex min-w-0 h-screen">
-        {mounted && canJoinVoiceRoom() && profile && livekitUrl ? (
+        {mounted && canJoinVoiceRoom() && profile && livekitUrl && !joinPrefs ? (
+          <>
+            <ChannelSidebar
+              serverName={servers[1]?.name ?? "StreamSync"}
+              activeChannelId="voice-lounge"
+              connectedChannelId={null}
+              onSelectChannel={() => {}}
+              onOpenCreateChannel={handleCreateRoom}
+              onOpenSettings={() => setLobbySettingsOpen(true)}
+              isMuted={!isMicOn}
+              onToggleMute={() => setIsMicOn((prev) => !prev)}
+              isDeafened={isDeafened}
+              onToggleDeafen={() => setIsDeafened((prev) => !prev)}
+              participants={[]}
+              localUser={{ name: profile.username, avatar: profile.avatarUrl }}
+              onJoinRoom={handleJoinRoom}
+              onCreateRoom={handleCreateRoom}
+              creatingRoom={creatingRoom}
+            />
+            <main className="flex-1 ml-[240px] flex flex-col bg-[#13131b] min-w-0 h-full overflow-hidden">
+              <TopBar
+                channelName={getRoomDisplayName(roomId, t.rooms.unnamed)}
+                channelType="voice"
+                viewMode="stage"
+                onToggleViewMode={() => {}}
+                isChatOpen={false}
+                onToggleChat={() => {}}
+                isMemberListOpen={false}
+                onToggleMemberList={() => {}}
+                isInCall={false}
+              />
+              <PreJoinLobby
+                channelName={getRoomDisplayName(roomId, t.rooms.unnamed)}
+                roomId={roomId}
+                displayName={profile.username}
+                avatarUrl={profile.avatarUrl}
+                onJoin={(prefs) =>
+                  setJoinPrefsByRoom((prev) =>
+                    roomId ? { ...prev, [roomId]: prefs } : prev
+                  )
+                }
+                onBack={() => router.push("/")}
+              />
+            </main>
+            <SettingsModal
+              isOpen={lobbySettingsOpen}
+              onClose={() => setLobbySettingsOpen(false)}
+              isMuted={!isMicOn}
+              onToggleMute={() => setIsMicOn((prev) => !prev)}
+              isVideoOn={isCameraOn}
+              onToggleVideo={() => setIsCameraOn((prev) => !prev)}
+            />
+          </>
+        ) : mounted && canJoinVoiceRoom() && profile && livekitUrl && joinPrefs ? (
           <LiveKitRoomSession
             key={roomId}
             roomId={roomId}
             livekitUrl={livekitUrl}
             participantName={profile.username}
+            audio={joinPrefs.audio}
+            video={joinPrefs.video}
             onDisconnected={() => {
               if (consumeIntentionalRoomNavigation()) return;
               router.push("/");

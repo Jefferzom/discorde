@@ -16,6 +16,7 @@ import { useI18n } from "@/lib/i18n/context";
 import MediaDeviceSelector from "@/components/MediaDeviceSelector";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useHasMounted } from "@/hooks/useHasMounted";
+import PresenceStatusPicker, { PresenceDot } from "@/components/PresenceStatusPicker";
 import {
   generateDicebearAvatar,
   getUserProfile,
@@ -377,27 +378,23 @@ export default function SettingsModal({
 
               <form onSubmit={handleProfileSave} className="flex flex-col gap-4">
                 <div className="flex items-center gap-4 p-4 bg-[#13131b] rounded-2xl border border-[#292932]">
-                  <img
-                    src={
-                      mounted && profile
-                        ? previewAvatar
-                        : generateDicebearAvatar("guest")
-                    }
-                    alt={username || t.settings.userProfile}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-[#6366f1] shrink-0"
-                  />
+                  <div className="relative w-16 h-16 shrink-0">
+                    <img
+                      src={
+                        mounted && profile
+                          ? previewAvatar
+                          : generateDicebearAvatar("guest")
+                      }
+                      alt={username || t.settings.userProfile}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-[#6366f1]"
+                    />
+                    <PresenceDot className="absolute bottom-0 right-0 w-3.5 h-3.5" />
+                  </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-base font-bold text-white truncate">
                       {mounted && profile ? profile.username : t.settings.noProfile}
                     </span>
-                    <span className="text-xs text-[#908fa0] truncate">
-                      {mounted && profile?.avatarUrl
-                        ? profile.avatarUrl
-                        : t.onboarding.avatarHint}
-                    </span>
-                    <span className="text-[11px] text-emerald-400 mt-1">
-                      ● {t.common.online}
-                    </span>
+                    <PresenceStatusPicker />
                   </div>
                 </div>
 

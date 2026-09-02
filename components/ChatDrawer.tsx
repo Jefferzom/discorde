@@ -64,7 +64,13 @@ export default function ChatDrawer({
               key={p.id}
               className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#292932] transition-colors cursor-pointer group"
             >
-              <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0">
+                <div
+                  className={`relative w-8 h-8 rounded-full overflow-hidden shrink-0 ${
+                    p.isSpeaking
+                      ? "ring-2 ring-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]"
+                      : ""
+                  }`}
+                >
                 <img
                   src={p.avatar}
                   alt={p.name}

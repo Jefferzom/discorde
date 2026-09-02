@@ -14,10 +14,12 @@ export default function SidebarParticipant({
   return (
     <div className="flex items-center justify-between px-2 py-1 rounded-md hover:bg-[#292932]/70 group cursor-pointer transition-colors">
       <div className="flex items-center gap-2 min-w-0">
-        <div className="relative w-5 h-5 rounded-full overflow-hidden shrink-0">
-          <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+        <div className="relative w-5 h-5 shrink-0">
+          <div className="w-5 h-5 rounded-full overflow-hidden">
+            <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+          </div>
           {p.isSpeaking && (
-            <span className="absolute inset-0 rounded-full border border-emerald-400 animate-ping opacity-75" />
+            <span className="absolute -inset-0.5 rounded-full border-2 border-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
           )}
         </div>
         <span

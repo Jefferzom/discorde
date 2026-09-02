@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n/context";
 import { createRoom } from "@/lib/supabase/rooms";
 import { saveRoomNameLocal } from "@/lib/roomStorage";
 import {
+  markIntentionalDisconnect,
   markIntentionalRoomNavigation,
   notifyRoomsUpdated,
 } from "@/lib/roomEvents";
@@ -58,6 +59,7 @@ export function useRoomSessionActions({
       return;
     }
 
+    markIntentionalDisconnect();
     markIntentionalRoomNavigation();
     if (!isDeafened) playNotificationSound("roomSwitch");
     router.push(`/room/${roomId}`);
@@ -91,6 +93,7 @@ export function useRoomSessionActions({
       return;
     }
 
+    markIntentionalDisconnect();
     markIntentionalRoomNavigation();
     if (!isDeafened) playNotificationSound("channelJoin");
     router.push(`/room/${roomId}`);
@@ -116,6 +119,7 @@ export function useRoomSessionActions({
       return true;
     }
 
+    markIntentionalDisconnect();
     markIntentionalRoomNavigation();
     if (!isDeafened) playNotificationSound("channelJoin");
     router.push(`/room/${roomId}`);

@@ -1,79 +1,94 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Video,
   VideoOff,
   Mic,
   MicOff,
   Volume2,
-  Sparkles,
   Users,
   ShieldCheck,
   ChevronRight,
-  CheckCircle2
+  CheckCircle2,
+  ArrowLeft,
 } from "lucide-react";
-import { Participant } from "../types/streamsync";
 import { useI18n } from "@/lib/i18n/context";
+import { useLocalMediaPreview } from "@/hooks/useLocalMediaPreview";
+import { fetchRoomOccupancy } from "@/lib/roomsApi";
+import MediaDeviceSelector from "@/components/MediaDeviceSelector";
+
+export interface JoinMediaPrefs {
+  audio: boolean;
+  video: boolean;
+}
 
 interface PreJoinLobbyProps {
   channelName: string;
-  onJoinCall: () => void;
-  participants: Participant[];
-  isVideoOn: boolean;
-  onToggleVideo: () => void;
-  isMuted: boolean;
-  onToggleMute: () => void;
+  roomId: string;
+  displayName: string;
+  avatarUrl: string;
+  onJoin: (prefs: JoinMediaPrefs) => void;
+  onBack: () => void;
 }
 
 export default function PreJoinLobby({
   channelName,
-  onJoinCall,
-  participants,
-  isVideoOn,
-  onToggleVideo,
-  isMuted,
-  onToggleMute,
+  roomId,
+  displayName,
+  avatarUrl,
+  onJoin,
+  onBack,
 }: PreJoinLobbyProps) {
   const { t } = useI18n();
-  const [micLevel, setMicLevel] = useState(40);
-  const [bgBlur, setBgBlur] = useState(true);
+  const [isVideoOn, setIsVideoOn] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [occupancy, setOccupancy] = useState<number | null>(null);
+  const { videoRef, micLevel, error, stopStream } = useLocalMediaPreview({
+    videoOn: isVideoOn,
+    muted: isMuted,
+  });
 
-  // Simulate audio input activity meter
   useEffect(() => {
-    if (isMuted) {
-      setMicLevel(0);
-      return;
-    }
-    const interval = setInterval(() => {
-      setMicLevel(Math.floor(Math.random() * 60) + 20);
-    }, 200);
-    return () => clearInterval(interval);
-  }, [isMuted]);
+    let cancelled = false;
+    fetchRoomOccupancy(roomId)
+      .then(({ participantCount }) => {
+        if (!cancelled) setOccupancy(participantCount);
+      })
+      .catch(() => {
+        if (!cancelled) setOccupancy(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [roomId]);
+
+  const handleJoin = () => {
+    stopStream();
+    onJoin({ audio: !isMuted, video: isVideoOn });
+  };
 
   return (
-    <div className="flex-1 bg-[#0d0d15] flex items-center justify-center p-6 select-none overflow-y-auto">
+    <div className="flex-1 bg-[#0d0d15] flex items-center justify-center p-6 select-none overflow-y-auto min-h-0">
       <div className="max-w-3xl w-full bg-[#1b1b23] border border-[#292932] rounded-3xl p-8 shadow-2xl flex flex-col md:flex-row gap-8">
-        {/* Left: Video & Camera Preview */}
         <div className="flex-1 flex flex-col gap-4">
-          <div className="relative aspect-video bg-[#13131b] rounded-2xl overflow-hidden border border-[#292932] flex items-center justify-center shadow-inner group">
-            {isVideoOn ? (
-              <div className="relative w-full h-full">
-                <img
-                  src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&h=400&q=80"
-                  alt="Camera Preview"
-                  className={`w-full h-full object-cover transition-all ${
-                    bgBlur ? "filter blur-[2px]" : ""
-                  }`}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-3">
+          <div className="relative aspect-video bg-[#13131b] rounded-2xl overflow-hidden border border-[#292932] flex items-center justify-center shadow-inner">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`absolute inset-0 w-full h-full object-cover scale-x-[-1] ${
+                isVideoOn ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+            />
+
+            {!isVideoOn && (
+              <div className="flex flex-col items-center gap-3 z-10">
                 <div className="w-20 h-20 rounded-full bg-[#1f1f27] border border-white/10 flex items-center justify-center overflow-hidden shadow-lg">
                   <img
-                    src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&h=120&q=80"
-                    alt="Alex"
+                    src={avatarUrl}
+                    alt={displayName}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -81,10 +96,10 @@ export default function PreJoinLobby({
               </div>
             )}
 
-            {/* In-Preview Controls */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-[#13131b]/90 backdrop-blur-md px-4 py-1.5 rounded-full flex items-center gap-3 border border-white/10 shadow-lg">
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-[#13131b]/90 backdrop-blur-md px-4 py-1.5 rounded-full flex items-center gap-3 border border-white/10 shadow-lg z-10">
               <button
-                onClick={onToggleVideo}
+                type="button"
+                onClick={() => setIsVideoOn((prev) => !prev)}
                 className={`p-2 rounded-full transition-colors ${
                   isVideoOn
                     ? "bg-[#6366f1] text-white"
@@ -96,7 +111,8 @@ export default function PreJoinLobby({
               </button>
 
               <button
-                onClick={onToggleMute}
+                type="button"
+                onClick={() => setIsMuted((prev) => !prev)}
                 className={`p-2 rounded-full transition-colors ${
                   !isMuted
                     ? "bg-[#6366f1] text-white"
@@ -106,22 +122,13 @@ export default function PreJoinLobby({
               >
                 {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </button>
-
-              <button
-                onClick={() => setBgBlur(!bgBlur)}
-                className={`p-2 rounded-full transition-colors ${
-                  bgBlur
-                    ? "bg-emerald-600 text-white"
-                    : "bg-[#292932] text-[#c7c4d7]"
-                }`}
-                title={t.lobby.bgBlur}
-              >
-                <Sparkles className="w-4 h-4" />
-              </button>
             </div>
           </div>
 
-          {/* Mic Meter Bar */}
+          {error && (
+            <p className="text-xs text-amber-400/90">{t.lobby.previewError}</p>
+          )}
+
           <div className="flex items-center gap-3 bg-[#13131b] px-3.5 py-2.5 rounded-xl border border-[#292932]">
             <Mic className={`w-4 h-4 ${isMuted ? "text-red-400" : "text-emerald-400"}`} />
             <div className="flex-1 flex flex-col gap-1">
@@ -131,15 +138,19 @@ export default function PreJoinLobby({
               </div>
               <div className="w-full h-1.5 bg-[#292932] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-emerald-400 transition-all duration-150 rounded-full"
-                  style={{ width: `${micLevel}%` }}
+                  className="h-full bg-emerald-400 transition-all duration-75 rounded-full"
+                  style={{ width: `${isMuted ? 0 : micLevel}%` }}
                 />
               </div>
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <MediaDeviceSelector kind="audioinput" variant="field" dropUp={false} />
+            <MediaDeviceSelector kind="audiooutput" variant="field" dropUp={false} />
+          </div>
         </div>
 
-        {/* Right: Channel info & Join Action */}
         <div className="flex-1 flex flex-col justify-between gap-6">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
@@ -147,52 +158,54 @@ export default function PreJoinLobby({
               <span>{t.lobby.voiceChannelPreview}</span>
             </div>
 
-            <h2 className="text-2xl font-bold text-white tracking-tight">
-              #{channelName}
+            <h2 className="text-2xl font-bold text-white tracking-tight truncate" title={channelName}>
+              {channelName}
             </h2>
 
-            <p className="text-xs text-[#c7c4d7] leading-relaxed">
-              {t.lobby.lobbyDesc}
-            </p>
+            <p className="text-xs text-[#c7c4d7] leading-relaxed">{t.lobby.lobbyDesc}</p>
 
-            {/* Who is already in this room */}
             <div className="mt-2 bg-[#13131b] p-3.5 rounded-2xl border border-[#292932] flex flex-col gap-2">
               <div className="flex items-center justify-between text-xs text-[#908fa0]">
                 <span className="flex items-center gap-1.5 font-medium">
                   <Users className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>{t.lobby.alreadyInCall} ({participants.length})</span>
+                  <span>{t.lobby.alreadyInCall}</span>
                 </span>
-                <span className="text-emerald-400 text-[11px]">● {t.common.live}</span>
+                <span className="text-emerald-400 text-[11px]">
+                  {occupancy == null
+                    ? "…"
+                    : occupancy === 0
+                      ? t.lobby.noParticipants
+                      : t.lobby.occupancyCount.replace("{n}", String(occupancy))}
+                </span>
               </div>
-
-              <div className="flex items-center gap-2 overflow-x-auto py-1">
-                {participants.map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center gap-1.5 bg-[#1f1f27] px-2.5 py-1 rounded-full border border-white/5 shrink-0"
-                  >
-                    <img
-                      src={p.avatar}
-                      alt={p.name}
-                      className="w-4 h-4 rounded-full object-cover"
-                    />
-                    <span className="text-[11px] text-white font-medium">
-                      {p.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <p className="text-[11px] text-[#908fa0]">
+                {displayName} · {t.common.you}
+              </p>
             </div>
           </div>
 
-          {/* Join CTA */}
           <div className="flex flex-col gap-3">
             <button
-              onClick={onJoinCall}
+              type="button"
+              onClick={handleJoin}
               className="w-full py-3.5 px-6 rounded-2xl bg-[#6366f1] hover:bg-[#8083ff] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/50 hover:scale-[1.02] active:scale-[0.98]"
             >
-              <span>{t.lobby.joinRoom} #{channelName}</span>
+              <span>
+                {t.lobby.joinRoom} {channelName}
+              </span>
               <ChevronRight className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                stopStream();
+                onBack();
+              }}
+              className="w-full py-2 text-xs text-[#908fa0] hover:text-white flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              {t.lobby.back}
             </button>
 
             <div className="flex items-center justify-center gap-4 text-[11px] text-[#908fa0]">

@@ -6,14 +6,17 @@ import {
   TrackToggle,
   VideoTrack,
   isTrackReference,
+  useConnectionState,
   useRoomContext,
   useTracks,
 } from "@livekit/components-react";
-import { Track } from "livekit-client";
+import { ConnectionState, Track } from "livekit-client";
 import type { TrackReference } from "@livekit/components-core";
 import { Maximize2, Minimize2, Monitor, PhoneOff, Pin, ScreenShare } from "lucide-react";
 import { useI18n } from "@/lib/i18n/context";
-import { clearIntentionalRoomNavigation } from "@/lib/roomEvents";
+import { clearIntentionalRoomNavigation, markIntentionalDisconnect } from "@/lib/roomEvents";
+import { getLeaveWarning, type LeaveWarning } from "@/lib/leaveCall";
+import LeaveCallModal from "@/components/LeaveCallModal";
 import { useRouter } from "next/navigation";
 import CameraPiPOverlay from "@/components/CameraPiPOverlay";
 import MediaDeviceSelector from "@/components/MediaDeviceSelector";
@@ -67,7 +70,9 @@ export default function CustomRoomLayout() {
   const [shareStageFocus, setShareStageFocus] = useState<"screen" | "camera">("screen");
   const [focusedTrackKey, setFocusedTrackKey] = useState<string | null>(null);
   const [isStageFullscreen, setIsStageFullscreen] = useState(false);
+  const [leaveWarning, setLeaveWarning] = useState<LeaveWarning | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const connectionState = useConnectionState();
 
   const allTracks = useTracks(
     [Track.Source.Camera, Track.Source.ScreenShare, Track.Source.ScreenShareAudio],
@@ -214,10 +219,21 @@ export default function CustomRoomLayout() {
     }
   };
 
-  const handleLeaveRoom = async () => {
+  const confirmLeaveRoom = async () => {
+    setLeaveWarning(null);
+    markIntentionalDisconnect();
     clearIntentionalRoomNavigation();
     await room.disconnect(true);
     router.push("/");
+  };
+
+  const handleLeaveRoom = async () => {
+    const warning = getLeaveWarning(room);
+    if (warning) {
+      setLeaveWarning(warning);
+      return;
+    }
+    await confirmLeaveRoom();
   };
 
   const renderStageContent = () => {
@@ -236,6 +252,7 @@ export default function CustomRoomLayout() {
               youLabel={t.common.you}
               variant="stage"
               popOutLabel={t.stage.popOut}
+              volumeLabel={t.stage.userVolume}
               isFocused
               focusLabel={t.stage.spotlight}
               badge={t.stage.sharerCamera}
@@ -269,6 +286,7 @@ export default function CustomRoomLayout() {
                 name={sharerName}
                 variant="split"
                 popOutLabel={t.stage.popOut}
+                volumeLabel={t.stage.userVolume}
                 badge={t.stage.sharerCamera}
                 onFocus={() => setShareStageFocus("camera")}
                 focusLabel={t.stage.focusCamera}
@@ -314,6 +332,7 @@ export default function CustomRoomLayout() {
             youLabel={t.common.you}
             variant="stage"
             popOutLabel={t.stage.popOut}
+            volumeLabel={t.stage.userVolume}
             isFocused
             focusLabel={t.stage.spotlight}
             sharingLabel={
@@ -339,6 +358,12 @@ export default function CustomRoomLayout() {
   return (
     <div className="relative flex flex-1 flex-col gap-3 min-h-0 h-full p-4 pb-20 bg-[#0d0d15]">
       <RoomAudioRenderer />
+
+      {connectionState === ConnectionState.Reconnecting && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold">
+          {t.call.connectionLost} · {t.call.reconnecting}
+        </div>
+      )}
 
       <div
         ref={stageRef}
@@ -427,6 +452,7 @@ export default function CustomRoomLayout() {
                 youLabel={t.common.you}
                 sharingLabel={isScreenShare ? t.common.sharing : undefined}
                 popOutLabel={t.stage.popOut}
+                volumeLabel={t.stage.userVolume}
                 isFocused={
                   activeScreenShare
                     ? shareStageFocus === "camera" && isMainScreenShare
@@ -492,6 +518,14 @@ export default function CustomRoomLayout() {
           <PhoneOff className="w-5 h-5 group-hover:rotate-12 transition-transform" />
         </button>
       </div>
+
+      {leaveWarning && (
+        <LeaveCallModal
+          warning={leaveWarning}
+          onStay={() => setLeaveWarning(null)}
+          onConfirm={() => void confirmLeaveRoom()}
+        />
+      )}
     </div>
   );
 }

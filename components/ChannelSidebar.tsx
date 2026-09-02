@@ -23,6 +23,7 @@ import { useI18n } from "@/lib/i18n/context";
 import { useActiveRooms } from "@/hooks/useActiveRooms";
 import VoiceRoomsList from "@/components/VoiceRoomsList";
 import MediaDeviceSelector from "@/components/MediaDeviceSelector";
+import PresenceStatusPicker, { PresenceDot } from "@/components/PresenceStatusPicker";
 import { getRoomNameLocal } from "@/lib/roomStorage";
 
 interface ChannelSidebarProps {
@@ -301,26 +302,24 @@ export default function ChannelSidebar({
               onClick={onOpenSettings}
               className="flex items-center gap-2 p-1 rounded-lg hover:bg-[#292932] cursor-pointer transition-colors flex-1 min-w-0"
             >
-              <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0">
-                <img
-                  src={
-                    localUser?.avatar ??
-                    "https://api.dicebear.com/7.x/bottts/svg?seed=guest"
-                  }
-                  alt={localUser?.name ?? "User"}
-                  className="w-full h-full object-cover"
-                />
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#13131b]" />
+              <div className="relative w-8 h-8 shrink-0">
+                <div className="w-8 h-8 rounded-full overflow-hidden">
+                  <img
+                    src={
+                      localUser?.avatar ??
+                      "https://api.dicebear.com/7.x/bottts/svg?seed=guest"
+                    }
+                    alt={localUser?.name ?? "User"}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <PresenceDot className="absolute bottom-0 right-0 w-2.5 h-2.5" />
               </div>
-              <div className="flex flex-col truncate">
+              <div className="flex flex-col truncate min-w-0">
                 <span className="text-[13px] font-semibold text-[#e4e1ed] truncate leading-tight">
                   {localUser?.name ?? "Guest"}
                 </span>
-                <span className="text-[10px] text-[#908fa0] truncate">
-                  {isVoiceConnected
-                    ? `#1337 • ${t.navigation.inVoice}`
-                    : `#1337 • ${t.common.online}`}
-                </span>
+                <PresenceStatusPicker />
               </div>
             </div>
 
