@@ -88,6 +88,7 @@ export default function LiveKitRoomSession({
       token={token}
       serverUrl={livekitUrl}
       connect
+      connectOptions={{ autoSubscribe: true }}
       data-lk-theme="default"
       className="flex-1 min-h-0 h-full w-full relative flex flex-col"
       onDisconnected={onDisconnected}

@@ -9,25 +9,50 @@ import {
   useTracks,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import type { TrackReference } from "@livekit/components-core";
 import { Monitor, PhoneOff, Pin, ScreenShare } from "lucide-react";
 import { useI18n } from "@/lib/i18n/context";
 
 const toggleBtnClass =
   "w-11 h-11 rounded-full flex items-center justify-center transition-all duration-150 shadow-md border-0 cursor-pointer data-[lk-enabled=true]:bg-[#1f1f27] data-[lk-enabled=true]:text-white data-[lk-enabled=true]:hover:bg-[#34343d] data-[lk-enabled=false]:bg-red-500/20 data-[lk-enabled=false]:text-red-400 data-[lk-enabled=false]:border data-[lk-enabled=false]:border-red-500/30 data-[lk-enabled=false]:hover:bg-red-500/30";
 
+function getActiveScreenShares(screenShares: TrackReference[]) {
+  const valid = screenShares.filter((track) => Boolean(track.publication?.track));
+
+  const remote = valid.filter((track) => !track.participant.isLocal);
+  const local = valid.find((track) => track.participant.isLocal);
+
+  // Prioriza tela de OUTROS participantes — se ambos compartilham, você vê o remoto
+  const spotlight = remote[0] ?? local;
+  const secondary = valid.filter((track) => track !== spotlight);
+
+  return { spotlight, secondary };
+}
+
 export default function CustomRoomLayout() {
   const { t } = useI18n();
 
-  const allTracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
+  const allTracks = useTracks(
+    [Track.Source.Camera, Track.Source.ScreenShare, Track.Source.ScreenShareAudio],
+    { onlySubscribed: true }
+  );
 
   const screenShareTracks = allTracks.filter(
-    (track) => track.source === Track.Source.ScreenShare && isTrackReference(track)
+    (track): track is TrackReference =>
+      isTrackReference(track) && track.source === Track.Source.ScreenShare
   );
+
+  const { spotlight: activeScreenShare, secondary: secondaryScreenShares } =
+    getActiveScreenShares(screenShareTracks);
+
   const cameraTracks = allTracks.filter(
     (track) => track.source === Track.Source.Camera
   );
 
-  const activeScreenShare = screenShareTracks[0];
+  const filmstripTracks = [
+    ...secondaryScreenShares,
+    ...cameraTracks,
+  ];
 
   return (
     <div className="relative flex flex-1 flex-col gap-3 min-h-0 h-full p-4 pb-20 bg-[#0d0d15]">
@@ -62,21 +87,26 @@ export default function CustomRoomLayout() {
 
       {/* Grid inferior — câmeras dos participantes */}
       <div className="h-32 sm:h-36 shrink-0 flex items-center gap-3 overflow-x-auto custom-scrollbar pb-1">
-        {cameraTracks.length === 0 ? (
+        {filmstripTracks.length === 0 ? (
           <div className="w-full h-full flex items-center justify-center text-xs text-[#908fa0] border border-dashed border-[#292932] rounded-2xl">
-            Aguardando participantes com câmera...
+            Aguardando participantes...
           </div>
         ) : (
-          cameraTracks.map((trackRef) => {
+          filmstripTracks.map((trackRef) => {
             const name =
               trackRef.participant.name || trackRef.participant.identity;
             const hasVideo =
               isTrackReference(trackRef) && trackRef.publication?.track;
+            const isScreenShare = trackRef.source === Track.Source.ScreenShare;
 
             return (
               <div
                 key={`${trackRef.participant.identity}-${trackRef.source}`}
-                className="w-48 sm:w-56 h-full shrink-0 bg-[#1f1f27] rounded-2xl overflow-hidden relative shadow-md border border-[#292932] hover:border-[#6366f1] transition-all duration-200"
+                className={`w-48 sm:w-56 h-full shrink-0 bg-[#1f1f27] rounded-2xl overflow-hidden relative shadow-md border transition-all duration-200 ${
+                  isScreenShare
+                    ? "border-red-500/40 hover:border-red-400"
+                    : "border-[#292932] hover:border-[#6366f1]"
+                }`}
               >
                 {hasVideo ? (
                   <VideoTrack
@@ -98,6 +128,7 @@ export default function CustomRoomLayout() {
                     <span className="text-[11px] font-semibold text-white truncate max-w-[120px] block">
                       {name}
                       {trackRef.participant.isLocal && ` (${t.common.you})`}
+                      {isScreenShare && ` · ${t.common.sharing}`}
                     </span>
                   </div>
                 </div>
