@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import {
+  SCREEN_SHARE_PUBLISH_OPTIONS,
   toScreenShareCaptureOptions,
   type ScreenShareMode,
 } from "@/lib/screenShare";
@@ -21,7 +22,8 @@ export function useLiveKitScreenShare() {
       try {
         await localParticipant.setScreenShareEnabled(
           true,
-          toScreenShareCaptureOptions(nextMode)
+          toScreenShareCaptureOptions(nextMode),
+          SCREEN_SHARE_PUBLISH_OPTIONS
         );
         setMode(nextMode);
         setIsPaused(false);
@@ -64,7 +66,8 @@ export function useLiveKitScreenShare() {
         await localParticipant.setScreenShareEnabled(false);
         await localParticipant.setScreenShareEnabled(
           true,
-          toScreenShareCaptureOptions(nextMode)
+          toScreenShareCaptureOptions(nextMode),
+          SCREEN_SHARE_PUBLISH_OPTIONS
         );
         setIsPaused(false);
       } catch (err) {

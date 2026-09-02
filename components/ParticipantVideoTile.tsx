@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { VideoTrack, isTrackReference, useIsSpeaking } from "@livekit/components-react";
+import { useCallback, useRef } from "react";
+import {
+  VideoTrack,
+  isTrackReference,
+  useIsSpeaking,
+  useParticipantTracks,
+} from "@livekit/components-react";
 import { Track } from "livekit-client";
 import type { TrackReference } from "@livekit/components-core";
-import { ExternalLink, LayoutGrid, Columns2, Pause, Volume2 } from "lucide-react";
+import { Columns2, LayoutGrid, Pause, PictureInPicture2 } from "lucide-react";
 import { popOutFromTrackRef } from "@/lib/popOutVideo";
+import { usePictureInPicture } from "@/hooks/usePictureInPicture";
 import { useMediaPreferences } from "@/hooks/useMediaPreferences";
+import RemoteVolumeControl from "@/components/RemoteVolumeControl";
 import { useI18n } from "@/lib/i18n/context";
 
 interface ParticipantVideoTileProps {
@@ -40,21 +47,45 @@ export default function ParticipantVideoTile({
 }: ParticipantVideoTileProps) {
   const { t } = useI18n();
   const mediaPrefs = useMediaPreferences();
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const hasVideo = isTrackReference(trackRef) && Boolean(trackRef.publication?.track);
   const isScreenShare = trackRef.source === Track.Source.ScreenShare;
   const isSpeaking = useIsSpeaking(trackRef.participant);
-  const [volume, setVolume] = useState(100);
-  const showVolume = !trackRef.participant.isLocal && !isScreenShare;
+  const isRemote = !trackRef.participant.isLocal;
+
+  const handlePiPFallback = useCallback(() => {
+    popOutFromTrackRef(trackRef, name);
+  }, [trackRef, name]);
+
+  const { isPiPActive, togglePiP } = usePictureInPicture(
+    containerRef,
+    handlePiPFallback
+  );
+
+  const shareAudioTracks = useParticipantTracks(
+    [Track.Source.ScreenShareAudio],
+    trackRef.participant.identity
+  );
+  const hasShareAudio = shareAudioTracks.length > 0;
+
+  const audioSource = isScreenShare
+    ? Track.Source.ScreenShareAudio
+    : Track.Source.Microphone;
+  const showVolume = isRemote && (!isScreenShare || hasShareAudio);
+
   const isLocalCamera =
     Boolean(isYou) && trackRef.source === Track.Source.Camera;
   const mirrorClass =
     isLocalCamera && mediaPrefs.mirrorLocalVideo ? "scale-x-[-1]" : "";
+
   const isSharePaused =
     isScreenShare &&
-    trackRef.participant.isLocal &&
     Boolean(
-      (trackRef.publication as { isUpstreamPaused?: boolean } | undefined)
-        ?.isUpstreamPaused
+      trackRef.participant.isLocal
+        ? (trackRef.publication as { isUpstreamPaused?: boolean } | undefined)
+            ?.isUpstreamPaused
+        : trackRef.publication?.isMuted
     );
 
   const sizeClass =
@@ -64,16 +95,9 @@ export default function ParticipantVideoTile({
         ? "w-full h-full min-h-0"
         : "w-48 sm:w-56 h-full shrink-0";
 
-  const handleVolume = (value: number) => {
-    setVolume(value);
-    const participant = trackRef.participant;
-    if (!participant.isLocal && "setVolume" in participant) {
-      (participant as { setVolume: (v: number) => void }).setVolume(value / 100);
-    }
-  };
-
   return (
     <div
+      ref={containerRef}
       role={onFocus ? "button" : undefined}
       tabIndex={onFocus ? 0 : undefined}
       onClick={onFocus}
@@ -117,17 +141,24 @@ export default function ParticipantVideoTile({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          popOutFromTrackRef(trackRef, name);
-        }}
-        className="absolute top-2 right-2 p-1.5 rounded-lg bg-[#13131b]/90 border border-white/10 text-[#c7c4d7] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
-        title={popOutLabel}
-      >
-        <ExternalLink className="w-3.5 h-3.5" />
-      </button>
+      {hasVideo && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            void togglePiP();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className={`absolute top-2 right-2 p-1.5 rounded-lg border border-white/10 transition-opacity z-10 ${
+            isPiPActive
+              ? "bg-indigo-500/80 text-white opacity-100"
+              : "bg-[#13131b]/90 text-[#c7c4d7] hover:text-white opacity-0 group-hover:opacity-100 focus:opacity-100"
+          }`}
+          title={isPiPActive ? t.stage.exitPictureInPicture : popOutLabel}
+        >
+          <PictureInPicture2 className="w-3.5 h-3.5" />
+        </button>
+      )}
 
       <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-1 z-10">
         <div className="bg-[#13131b]/80 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/5 self-start max-w-full">
@@ -139,24 +170,15 @@ export default function ParticipantVideoTile({
             {isFocused && focusLabel && ` · ${focusLabel}`}
           </span>
         </div>
+
         {showVolume && (
-          <div
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#13131b]/90 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <Volume2 className="w-3 h-3 text-[#c7c4d7] shrink-0" />
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={volume}
-              onChange={(e) => handleVolume(Number(e.target.value))}
-              className="w-full accent-emerald-400 h-1 bg-[#292932] rounded-lg cursor-pointer"
-              title={volumeLabel}
-            />
-            <span className="text-[9px] text-[#908fa0] w-6 text-right">{volume}</span>
-          </div>
+          <RemoteVolumeControl
+            participant={trackRef.participant}
+            source={audioSource}
+            sliderLabel={
+              isScreenShare ? t.stage.shareVolume : volumeLabel ?? t.stage.userVolume
+            }
+          />
         )}
       </div>
     </div>

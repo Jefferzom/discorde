@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { VideoTrack, useIsSpeaking } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-core";
-import { ExternalLink, GripVertical, Pin, X } from "lucide-react";
+import { GripVertical, PictureInPicture2, Pin, X } from "lucide-react";
 import { popOutFromTrackRef } from "@/lib/popOutVideo";
+import { usePictureInPicture } from "@/hooks/usePictureInPicture";
 import { useMediaPreferences } from "@/hooks/useMediaPreferences";
 
 interface CameraPiPOverlayProps {
@@ -33,6 +34,15 @@ export default function CameraPiPOverlay({
   const [dragging, setDragging] = useState(false);
   const isSpeaking = useIsSpeaking(trackRef.participant);
   const mediaPrefs = useMediaPreferences();
+
+  const handlePiPFallback = useCallback(() => {
+    popOutFromTrackRef(trackRef, name);
+  }, [trackRef, name]);
+
+  const { isPiPActive, togglePiP } = usePictureInPicture(
+    containerRef,
+    handlePiPFallback
+  );
 
   const trackSid = trackRef.publication?.trackSid;
 
@@ -156,11 +166,15 @@ export default function CameraPiPOverlay({
           <button
             type="button"
             data-pip-action
-            onClick={() => popOutFromTrackRef(trackRef, name)}
-            className="p-1 rounded-md bg-[#13131b]/90 border border-white/10 text-[#c7c4d7] hover:text-white hover:bg-[#292932] transition-colors"
+            onClick={() => void togglePiP()}
+            className={`p-1 rounded-md border border-white/10 transition-colors ${
+              isPiPActive
+                ? "bg-indigo-500/80 text-white"
+                : "bg-[#13131b]/90 text-[#c7c4d7] hover:text-white hover:bg-[#292932]"
+            }`}
             title={popOutLabel}
           >
-            <ExternalLink className="w-3 h-3" />
+            <PictureInPicture2 className="w-3 h-3" />
           </button>
           <button
             type="button"

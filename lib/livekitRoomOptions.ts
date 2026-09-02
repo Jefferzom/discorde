@@ -1,4 +1,4 @@
-import { VideoPresets, type RoomOptions } from "livekit-client";
+import { ScreenSharePresets, VideoPresets, type RoomOptions } from "livekit-client";
 import { getMediaPreferences } from "@/lib/mediaPreferences";
 import { getSavedMediaDeviceId } from "@/lib/mediaDeviceStorage";
 
@@ -20,14 +20,14 @@ export function getLiveKitRoomOptions(): RoomOptions {
     },
     publishDefaults: {
       simulcast: true,
-      screenShareEncoding: {
-        maxBitrate: 3_000_000,
-        maxFramerate: 30,
-      },
+      /** Câmera: 720p30 — share usa screenShareEncoding abaixo */
       videoEncoding: {
         maxBitrate: 1_700_000,
         maxFramerate: 30,
       },
+      /** Screen share: 1080p @ 30fps (preset oficial LiveKit) */
+      screenShareEncoding: ScreenSharePresets.h1080fps30.encoding,
+      screenShareSimulcastLayers: [ScreenSharePresets.h720fps15],
     },
   };
 }

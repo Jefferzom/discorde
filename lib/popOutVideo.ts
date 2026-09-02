@@ -1,7 +1,63 @@
-import type { LocalTrack, RemoteTrack, Track } from "livekit-client";
+import type { Track } from "livekit-client";
 
 const POPUP_FEATURES = "width=720,height=480,menubar=no,toolbar=no,location=no,status=no";
 
+const METADATA_TIMEOUT_MS = 2000;
+
+export function isPictureInPictureSupported(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.pictureInPictureEnabled === true;
+}
+
+export function findVideoElement(
+  container: HTMLElement | null | undefined
+): HTMLVideoElement | null {
+  return container?.querySelector("video") ?? null;
+}
+
+function waitForMetadata(video: HTMLVideoElement): Promise<void> {
+  if (video.readyState > 0) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      video.removeEventListener("loadedmetadata", onLoaded);
+      reject(new Error("metadata timeout"));
+    }, METADATA_TIMEOUT_MS);
+
+    const onLoaded = () => {
+      clearTimeout(timeout);
+      resolve();
+    };
+
+    video.addEventListener("loadedmetadata", onLoaded, { once: true });
+  });
+}
+
+export async function requestPictureInPicture(
+  video: HTMLVideoElement
+): Promise<boolean> {
+  if (!isPictureInPictureSupported() || video.disablePictureInPicture) return false;
+
+  try {
+    await waitForMetadata(video);
+    if (video.paused) await video.play().catch(() => undefined);
+    await video.requestPictureInPicture();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function exitPictureInPicture(): Promise<void> {
+  if (typeof document === "undefined" || !document.pictureInPictureElement) return;
+  try {
+    await document.exitPictureInPicture();
+  } catch {
+    // Browser refused to exit — ignore
+  }
+}
+
+/** Fallback para navegadores sem a API de Picture-in-Picture (ex.: Firefox) */
 export function popOutMediaTrack(mediaTrack: Track, title: string): Window | null {
   if (typeof window === "undefined") return null;
 
