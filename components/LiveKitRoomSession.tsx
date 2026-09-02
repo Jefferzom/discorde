@@ -27,6 +27,7 @@ export default function LiveKitRoomSession({
 
     async function fetchToken() {
       try {
+        setToken(null);
         setConnectionError(null);
         const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
         const response = await fetch(
@@ -82,7 +83,7 @@ export default function LiveKitRoomSession({
 
   return (
     <LiveKitRoom
-      key={token}
+      key={`${roomId}-${token}`}
       video={false}
       audio
       token={token}

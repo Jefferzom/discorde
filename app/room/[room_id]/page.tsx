@@ -21,6 +21,8 @@ import { useHasMounted } from "@/hooks/useHasMounted";
 import { useLiveKitMappedParticipants } from "@/hooks/useLiveKitMappedParticipants";
 import { playNotificationSound } from "@/lib/notificationSounds";
 import { getChannelDisplayName } from "@/lib/channelNames";
+import { useRoomSessionActions } from "@/hooks/useRoomSessionActions";
+import { consumeIntentionalRoomNavigation } from "@/lib/roomEvents";
 import { canJoinVoiceRoom, type UserProfile } from "@/lib/userStorage";
 
 const LiveKitRoomSession = dynamic(
@@ -45,9 +47,18 @@ interface RoomPageProps {
 interface RoomConnectedLayoutProps {
   profile: UserProfile;
   roomId: string;
+  onJoinRoom: (roomId: string) => void;
+  onCreateRoom: () => void;
+  creatingRoom?: boolean;
 }
 
-function RoomConnectedLayout({ profile, roomId }: RoomConnectedLayoutProps) {
+function RoomConnectedLayout({
+  profile,
+  roomId,
+  onJoinRoom,
+  onCreateRoom,
+  creatingRoom = false,
+}: RoomConnectedLayoutProps) {
   const { t } = useI18n();
   const participants = useLiveKitMappedParticipants(profile);
 
@@ -77,7 +88,7 @@ function RoomConnectedLayout({ profile, roomId }: RoomConnectedLayoutProps) {
       isScreenSharing: false,
     },
     initialConnected: true,
-    initialChannelId: roomId,
+    initialChannelId: "voice-lounge",
   });
 
   useParticipantNotificationSounds(participants);
@@ -96,8 +107,8 @@ function RoomConnectedLayout({ profile, roomId }: RoomConnectedLayoutProps) {
     <>
       <ChannelSidebar
         serverName={currentServer.name}
-        activeChannelId={activeChannelId}
-        connectedChannelId={connectedChannelId}
+        activeChannelId="voice-lounge"
+        connectedChannelId="voice-lounge"
         onSelectChannel={selectChannel}
         onOpenCreateChannel={() => setIsCreateChannelOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
@@ -107,6 +118,10 @@ function RoomConnectedLayout({ profile, roomId }: RoomConnectedLayoutProps) {
         onToggleDeafen={() => setIsDeafened(!isDeafened)}
         participants={participants}
         localUser={{ name: profile.username, avatar: profile.avatarUrl }}
+        currentRoomId={roomId}
+        onJoinRoom={onJoinRoom}
+        onCreateRoom={onCreateRoom}
+        creatingRoom={creatingRoom}
       />
 
       <main className="flex-1 ml-[311px] flex flex-col bg-[#13131b] relative min-w-0 h-full overflow-hidden">
@@ -182,10 +197,7 @@ function RoomConnectedLayout({ profile, roomId }: RoomConnectedLayoutProps) {
       <CreateChannelModal
         isOpen={isCreateChannelOpen}
         onClose={() => setIsCreateChannelOpen(false)}
-        onCreateChannel={() => {
-          const newRoomId = crypto.randomUUID();
-          window.location.href = `/room/${newRoomId}`;
-        }}
+        onCreateChannel={onCreateRoom}
       />
 
       <SettingsModal
@@ -209,6 +221,12 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   const prevRoomIdRef = useRef<string | null>(null);
   const [isDeafened] = useState(false);
+  const {
+    creatingRoom,
+    handleCreateRoom,
+    handleJoinRoom,
+    handleOnboardingRoomComplete,
+  } = useRoomSessionActions({ isDeafened });
 
   useEffect(() => {
     if (!roomId || typeof roomId !== "string" || roomId.trim().length === 0) {
@@ -231,23 +249,36 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   return (
     <div className="h-screen w-screen overflow-hidden flex bg-[#13131b] text-[#e4e1ed] relative">
-      <UserOnboardingModal open={mounted && !canJoinVoiceRoom()} />
+      <UserOnboardingModal
+        open={mounted && !canJoinVoiceRoom()}
+        onComplete={handleOnboardingRoomComplete}
+      />
 
       <ServerRail
         activeServerId="gaming"
         onSelectServer={() => {}}
-        onOpenCreateServer={() => router.push(`/room/${crypto.randomUUID()}`)}
+        onOpenCreateServer={handleCreateRoom}
       />
 
       <div className="flex-1 ml-[72px] flex min-w-0 h-screen">
         {mounted && canJoinVoiceRoom() && profile && livekitUrl ? (
           <LiveKitRoomSession
+            key={roomId}
             roomId={roomId}
             livekitUrl={livekitUrl}
             participantName={profile.username}
-            onDisconnected={() => router.push("/")}
+            onDisconnected={() => {
+              if (consumeIntentionalRoomNavigation()) return;
+              router.push("/");
+            }}
           >
-            <RoomConnectedLayout profile={profile} roomId={roomId} />
+            <RoomConnectedLayout
+              profile={profile}
+              roomId={roomId}
+              onJoinRoom={handleJoinRoom}
+              onCreateRoom={handleCreateRoom}
+              creatingRoom={creatingRoom}
+            />
           </LiveKitRoomSession>
         ) : mounted && canJoinVoiceRoom() && profile && !livekitUrl ? (
           <div className="flex-1 flex items-center justify-center">

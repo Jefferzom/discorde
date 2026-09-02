@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   X,
   Mic,
@@ -9,9 +9,17 @@ import {
   Sparkles,
   Check,
   Languages,
-  Globe
+  User,
+  ImageIcon,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/context";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useHasMounted } from "@/hooks/useHasMounted";
+import {
+  generateDicebearAvatar,
+  getUserProfile,
+  setUserProfile,
+} from "@/lib/userStorage";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -27,11 +35,49 @@ export default function SettingsModal({
   onClose,
 }: SettingsModalProps) {
   const { t, language, setLanguage } = useI18n();
+  const profile = useUserProfile();
+  const mounted = useHasMounted();
   const [activeTab, setActiveTab] = useState<"voice" | "video" | "language" | "stitch" | "profile">("voice");
   const [inputVolume, setInputVolume] = useState(85);
   const [outputVolume, setOutputVolume] = useState(100);
   const [krispEnabled, setKrispEnabled] = useState(true);
   const [selectedQuality, setSelectedQuality] = useState("1080p60");
+  const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileSaved, setProfileSaved] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || activeTab !== "profile") return;
+    const stored = getUserProfile();
+    setUsername(stored?.username ?? "");
+    setAvatarUrl(stored?.avatarUrl ?? "");
+    setProfileError(null);
+    setProfileSaved(false);
+  }, [isOpen, activeTab, profile?.username, profile?.avatarUrl]);
+
+  const previewAvatar = useMemo(() => {
+    const seed = username.trim() || "guest";
+    return avatarUrl.trim() || generateDicebearAvatar(seed);
+  }, [username, avatarUrl]);
+
+  const handleProfileSave = (event: FormEvent) => {
+    event.preventDefault();
+
+    const trimmedName = username.trim();
+    if (!trimmedName) {
+      setProfileError(t.onboarding.usernameRequired);
+      return;
+    }
+
+    setUserProfile({
+      username: trimmedName,
+      avatarUrl: avatarUrl.trim() || generateDicebearAvatar(trimmedName),
+    });
+
+    setProfileError(null);
+    setProfileSaved(true);
+  };
 
   if (!isOpen) return null;
 
@@ -322,23 +368,101 @@ export default function SettingsModal({
             <div className="flex flex-col gap-4">
               <div>
                 <h3 className="text-base font-bold text-white">{t.settings.userProfile}</h3>
-                <p className="text-xs text-[#908fa0]">
-                  Your identity across servers and voice lounges.
-                </p>
+                <p className="text-xs text-[#908fa0]">{t.settings.profileDesc}</p>
               </div>
 
-              <div className="flex items-center gap-4 p-4 bg-[#13131b] rounded-2xl border border-[#292932]">
-                <img
-                  src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&h=120&q=80"
-                  alt="Alex"
-                  className="w-16 h-16 rounded-full object-cover border-2 border-[#6366f1]"
-                />
-                <div className="flex flex-col">
-                  <span className="text-base font-bold text-white">Alex</span>
-                  <span className="text-xs text-[#908fa0]">#1337 • Full-Stack Developer</span>
-                  <span className="text-[11px] text-emerald-400 mt-1">● Available</span>
+              <form onSubmit={handleProfileSave} className="flex flex-col gap-4">
+                <div className="flex items-center gap-4 p-4 bg-[#13131b] rounded-2xl border border-[#292932]">
+                  <img
+                    src={
+                      mounted && profile
+                        ? previewAvatar
+                        : generateDicebearAvatar("guest")
+                    }
+                    alt={username || t.settings.userProfile}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-[#6366f1] shrink-0"
+                  />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-base font-bold text-white truncate">
+                      {mounted && profile ? profile.username : t.settings.noProfile}
+                    </span>
+                    <span className="text-xs text-[#908fa0] truncate">
+                      {mounted && profile?.avatarUrl
+                        ? profile.avatarUrl
+                        : t.onboarding.avatarHint}
+                    </span>
+                    <span className="text-[11px] text-emerald-400 mt-1">
+                      ● {t.common.online}
+                    </span>
+                  </div>
                 </div>
-              </div>
+
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="settings-username"
+                    className="text-xs font-semibold text-[#c7c4d7] uppercase tracking-wide flex items-center gap-1.5"
+                  >
+                    <User className="w-3.5 h-3.5 text-indigo-400" />
+                    {t.onboarding.username}
+                  </label>
+                  <input
+                    id="settings-username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      if (profileError) setProfileError(null);
+                      setProfileSaved(false);
+                    }}
+                    placeholder={t.onboarding.usernamePlaceholder}
+                    maxLength={32}
+                    autoComplete="username"
+                    className="w-full px-4 py-3 rounded-xl bg-[#13131b] border border-[#292932] text-white placeholder:text-[#5c5b6b] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                  />
+                  {profileError && (
+                    <p className="text-xs text-red-400">{profileError}</p>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="settings-avatar"
+                    className="text-xs font-semibold text-[#c7c4d7] uppercase tracking-wide flex items-center gap-1.5"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />
+                    {t.onboarding.avatarUrl}
+                    <span className="text-[#908fa0] font-normal normal-case">
+                      ({t.onboarding.optional})
+                    </span>
+                  </label>
+                  <input
+                    id="settings-avatar"
+                    type="url"
+                    value={avatarUrl}
+                    onChange={(e) => {
+                      setAvatarUrl(e.target.value);
+                      setProfileSaved(false);
+                    }}
+                    placeholder={t.onboarding.avatarPlaceholder}
+                    className="w-full px-4 py-3 rounded-xl bg-[#13131b] border border-[#292932] text-white placeholder:text-[#5c5b6b] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                  />
+                  <p className="text-[11px] text-[#908fa0]">{t.onboarding.avatarHint}</p>
+                </div>
+
+                <button
+                  type="submit"
+                  className="self-start px-5 py-2.5 rounded-xl bg-[#6366f1] hover:bg-[#5558e3] text-white font-semibold text-sm flex items-center gap-2 transition-all"
+                >
+                  {profileSaved ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      {t.settings.profileSaved}
+                    </>
+                  ) : (
+                    t.settings.saveProfile
+                  )}
+                </button>
+              </form>
             </div>
           )}
         </div>

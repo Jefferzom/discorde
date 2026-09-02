@@ -5,7 +5,6 @@ import {
   ChevronDown,
   Hash,
   Volume2,
-  Radio,
   Plus,
   Mic,
   MicOff,
@@ -16,59 +15,11 @@ import {
   Folder,
   Code2,
   Bell,
-  Video,
 } from "lucide-react";
 import { Participant } from "../types/streamsync";
 import { useI18n } from "@/lib/i18n/context";
-
-function SidebarParticipant({
-  participant: p,
-  t,
-}: {
-  participant: Participant;
-  t: ReturnType<typeof useI18n>["t"];
-}) {
-  return (
-    <div className="flex items-center justify-between px-2 py-1 rounded-md hover:bg-[#292932]/70 group cursor-pointer transition-colors">
-      <div className="flex items-center gap-2 min-w-0">
-        <div className="relative w-5 h-5 rounded-full overflow-hidden shrink-0">
-          <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
-          {p.isSpeaking && (
-            <span className="absolute inset-0 rounded-full border border-emerald-400 animate-ping opacity-75" />
-          )}
-        </div>
-        <span
-          className={`text-[12px] truncate ${
-            p.isSpeaking ? "text-emerald-300 font-semibold" : "text-[#c7c4d7]"
-          }`}
-        >
-          {p.name} {p.isYou && `(${t.common.you})`}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-1 shrink-0">
-        {p.isVideoOn && (
-          <span
-            className="px-1 py-0.5 text-[9px] bg-indigo-500/20 text-indigo-300 font-bold uppercase rounded border border-indigo-500/30 flex items-center gap-0.5"
-            title={t.stage.cameraActive}
-          >
-            <Video className="w-2.5 h-2.5" />
-          </span>
-        )}
-        {p.isScreenSharing && (
-          <span className="px-1 py-0.2 text-[9px] bg-red-500/20 text-red-400 font-bold uppercase rounded border border-red-500/30">
-            {t.common.live}
-          </span>
-        )}
-        {p.isMuted ? (
-          <MicOff className="w-3 h-3 text-red-400" />
-        ) : p.isSpeaking ? (
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-        ) : null}
-      </div>
-    </div>
-  );
-}
+import { useActiveRooms } from "@/hooks/useActiveRooms";
+import VoiceRoomsList from "@/components/VoiceRoomsList";
 
 interface ChannelSidebarProps {
   serverName: string;
@@ -83,6 +34,10 @@ interface ChannelSidebarProps {
   onToggleDeafen: () => void;
   participants: Participant[];
   localUser?: { name: string; avatar: string };
+  currentRoomId?: string | null;
+  onJoinRoom?: (roomId: string) => void;
+  onCreateRoom?: () => void;
+  creatingRoom?: boolean;
 }
 
 export default function ChannelSidebar({
@@ -98,23 +53,14 @@ export default function ChannelSidebar({
   onToggleDeafen,
   participants,
   localUser,
+  currentRoomId,
+  onJoinRoom,
+  onCreateRoom,
+  creatingRoom = false,
 }: ChannelSidebarProps) {
   const { t } = useI18n();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  const renderConnectedParticipants = () => {
-    if (participants.length === 0) {
-      return (
-        <p className="pl-2 py-1 text-[11px] text-[#908fa0] italic">
-          {t.lobby.noParticipants}
-        </p>
-      );
-    }
-
-    return participants.map((p) => (
-      <SidebarParticipant key={p.id} participant={p} t={t} />
-    ));
-  };
+  const { rooms, loading, error, reload } = useActiveRooms();
 
   return (
     <aside className="w-[311px] h-screen fixed left-[72px] top-0 bg-[#1b1b23] flex flex-col z-20 shadow-xl border-r border-[#292932]">
@@ -243,15 +189,14 @@ export default function ChannelSidebar({
             {t.navigation.voiceChannels}
           </span>
           <button
-            onClick={onOpenCreateChannel}
+            onClick={onCreateRoom ?? onOpenCreateChannel}
             className="opacity-0 group-hover:opacity-100 hover:text-white transition-opacity"
-            title={t.navigation.createChannel}
+            title={t.rooms.createNew}
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Active Voice Lounge */}
         <div className="flex flex-col gap-0.5">
           <button
             onClick={() => onSelectChannel("voice-lounge", "voice")}
@@ -263,68 +208,25 @@ export default function ChannelSidebar({
           >
             <Volume2 className="w-4 h-4 text-[#adc6ff] shrink-0" />
             <span className="truncate flex-1">{t.navigation.voiceLounge}</span>
-            {connectedChannelId === "voice-lounge" && (
+            {currentRoomId && (
               <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 rounded border border-emerald-500/30">
                 {t.common.connected}
               </span>
             )}
           </button>
 
-          {connectedChannelId === "voice-lounge" && (
-            <div className="pl-6 pr-1 py-1 flex flex-col gap-1">
-              {renderConnectedParticipants()}
-            </div>
-          )}
-        </div>
-
-        {/* Other Voice Channels */}
-        <div className="flex flex-col gap-0.5">
-          <button
-            onClick={() => onSelectChannel("gaming-squad", "voice")}
-            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[14px] transition-colors w-full text-left ${
-              activeChannelId === "gaming-squad"
-                ? "bg-[#34343d] text-white font-medium"
-                : "text-[#c7c4d7] hover:bg-[#292932] hover:text-[#e4e1ed]"
-            }`}
-          >
-            <Volume2 className="w-4 h-4 text-[#908fa0] shrink-0" />
-            <span className="truncate flex-1">{t.navigation.gamingSquad}</span>
-            {connectedChannelId === "gaming-squad" && (
-              <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 rounded border border-emerald-500/30">
-                {t.common.connected}
-              </span>
-            )}
-          </button>
-
-          {connectedChannelId === "gaming-squad" && (
-            <div className="pl-6 pr-1 py-1 flex flex-col gap-1">
-              {renderConnectedParticipants()}
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-0.5">
-          <button
-            onClick={() => onSelectChannel("stage-stream", "voice")}
-            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[14px] transition-colors w-full text-left ${
-              activeChannelId === "stage-stream"
-                ? "bg-[#34343d] text-white font-medium"
-                : "text-[#c7c4d7] hover:bg-[#292932] hover:text-[#e4e1ed]"
-            }`}
-          >
-            <Radio className="w-4 h-4 text-[#ffb783] shrink-0" />
-            <span className="truncate flex-1">{t.navigation.stageKeynote}</span>
-            {connectedChannelId === "stage-stream" && (
-              <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 rounded border border-emerald-500/30">
-                {t.common.connected}
-              </span>
-            )}
-          </button>
-
-          {connectedChannelId === "stage-stream" && (
-            <div className="pl-6 pr-1 py-1 flex flex-col gap-1">
-              {renderConnectedParticipants()}
-            </div>
+          {onJoinRoom && onCreateRoom && (
+            <VoiceRoomsList
+              rooms={rooms}
+              loading={loading}
+              error={error}
+              currentRoomId={currentRoomId}
+              participants={participants}
+              creating={creatingRoom}
+              onJoinRoom={onJoinRoom}
+              onCreateRoom={onCreateRoom}
+              onRefresh={reload}
+            />
           )}
         </div>
       </div>

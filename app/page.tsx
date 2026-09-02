@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import ServerRail, { servers } from "@/components/ServerRail";
 import ChannelSidebar from "@/components/ChannelSidebar";
 import TopBar from "@/components/TopBar";
@@ -12,15 +11,14 @@ import CreateChannelModal from "@/components/CreateChannelModal";
 import SettingsModal from "@/components/SettingsModal";
 import { useParticipantNotificationSounds } from "@/hooks/useParticipantNotificationSounds";
 import { useChannelNavigation } from "@/hooks/useChannelNavigation";
-import { playNotificationSound } from "@/lib/notificationSounds";
+import { useRoomSessionActions } from "@/hooks/useRoomSessionActions";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { useI18n } from "@/lib/i18n/context";
 import { getChannelDisplayName } from "@/lib/channelNames";
-import { canJoinVoiceRoom, getVoiceChannelRoomId } from "@/lib/userStorage";
+import { canJoinVoiceRoom } from "@/lib/userStorage";
 
 export default function StreamSyncHub() {
-  const router = useRouter();
   const { t } = useI18n();
   const profile = useUserProfile();
   const mounted = useHasMounted();
@@ -33,15 +31,18 @@ export default function StreamSyncHub() {
   const [isMemberListOpen, setIsMemberListOpen] = useState(false);
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [pendingVoiceChannel, setPendingVoiceChannel] = useState<string | null>(
-    null
-  );
+
+  const {
+    creatingRoom,
+    handleCreateRoom,
+    handleJoinRoom,
+    handleOnboardingRoomComplete,
+  } = useRoomSessionActions({ isDeafened });
 
   const {
     activeServerId,
     activeChannelId,
     channelType,
-    connectedChannelId,
     participants,
     selectChannel,
     selectServer,
@@ -59,37 +60,8 @@ export default function StreamSyncHub() {
   const currentServer = servers.find((s) => s.id === activeServerId) || servers[1];
   const channelDisplayName = getChannelDisplayName(activeChannelId, t);
 
-  const joinVoiceChannel = (channelId: string) => {
-    if (!canJoinVoiceRoom()) {
-      setPendingVoiceChannel(channelId);
-      return;
-    }
-
-    if (!isDeafened) playNotificationSound("channelJoin");
-    router.push(`/room/${getVoiceChannelRoomId(channelId)}`);
-  };
-
-  const handleSelectChannel = (channelId: string, type: "text" | "voice") => {
-    if (type === "voice") {
-      joinVoiceChannel(channelId);
-      return;
-    }
-    selectChannel(channelId, type);
-  };
-
-  const handleCreateRoom = () => {
-    const roomId = crypto.randomUUID();
-    if (!isDeafened) playNotificationSound("roomSwitch");
-    router.push(`/room/${roomId}`);
-  };
-
-  const handleOnboardingComplete = () => {
-    if (pendingVoiceChannel && canJoinVoiceRoom()) {
-      const channelId = pendingVoiceChannel;
-      setPendingVoiceChannel(null);
-      if (!isDeafened) playNotificationSound("channelJoin");
-      router.push(`/room/${getVoiceChannelRoomId(channelId)}`);
-    }
+  const handleOnboardingComplete = async () => {
+    await handleOnboardingRoomComplete();
   };
 
   return (
@@ -108,8 +80,8 @@ export default function StreamSyncHub() {
       <ChannelSidebar
         serverName={currentServer.name}
         activeChannelId={activeChannelId}
-        connectedChannelId={connectedChannelId}
-        onSelectChannel={handleSelectChannel}
+        connectedChannelId={null}
+        onSelectChannel={selectChannel}
         onOpenCreateChannel={() => setIsCreateChannelOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         isMuted={!isMicOn}
@@ -122,6 +94,9 @@ export default function StreamSyncHub() {
             ? { name: profile.username, avatar: profile.avatarUrl }
             : undefined
         }
+        onJoinRoom={handleJoinRoom}
+        onCreateRoom={handleCreateRoom}
+        creatingRoom={creatingRoom}
       />
 
       <main className="flex-1 ml-[384px] flex flex-col bg-[#13131b] relative min-w-0 h-screen overflow-hidden">
@@ -147,7 +122,7 @@ export default function StreamSyncHub() {
           />
         </div>
 
-        <div className="flex-1 flex overflow-hidden relative">
+        <div className="flex-1 flex overflow-hidden relative min-h-0">
           <TextChannelChat
             key={activeChannelId}
             channelName={channelDisplayName}

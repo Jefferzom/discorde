@@ -2,17 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  DisconnectButton,
   RoomAudioRenderer,
   TrackToggle,
   VideoTrack,
   isTrackReference,
+  useRoomContext,
   useTracks,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import type { TrackReference } from "@livekit/components-core";
 import { Monitor, PhoneOff, Pin, ScreenShare } from "lucide-react";
 import { useI18n } from "@/lib/i18n/context";
+import { clearIntentionalRoomNavigation } from "@/lib/roomEvents";
+import { useRouter } from "next/navigation";
 import CameraPiPOverlay from "@/components/CameraPiPOverlay";
 import ParticipantVideoTile, {
   StageLayoutToggle,
@@ -47,6 +49,8 @@ function findCameraForParticipant(
 
 export default function CustomRoomLayout() {
   const { t } = useI18n();
+  const router = useRouter();
+  const room = useRoomContext();
   const [layoutMode, setLayoutMode] = useState<"spotlight" | "split">("spotlight");
   const [pipHidden, setPipHidden] = useState(false);
 
@@ -112,6 +116,12 @@ export default function CustomRoomLayout() {
   useEffect(() => {
     setPipHidden(false);
   }, [activeScreenShare?.participant.identity]);
+
+  const handleLeaveRoom = async () => {
+    clearIntentionalRoomNavigation();
+    await room.disconnect(true);
+    router.push("/");
+  };
 
   return (
     <div className="relative flex flex-1 flex-col gap-3 min-h-0 h-full p-4 pb-20 bg-[#0d0d15]">
@@ -240,12 +250,14 @@ export default function CustomRoomLayout() {
           <span className="hidden sm:inline">{t.controls.shareScreen}</span>
         </TrackToggle>
 
-        <DisconnectButton
+        <button
+          type="button"
+          onClick={handleLeaveRoom}
           className="w-11 h-11 rounded-full bg-[#93000a] text-white flex items-center justify-center hover:bg-red-600 transition-all duration-150 shadow-lg shadow-red-900/40 ml-1 border-0 cursor-pointer group"
           title={t.controls.disconnect}
         >
           <PhoneOff className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-        </DisconnectButton>
+        </button>
       </div>
     </div>
   );

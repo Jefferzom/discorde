@@ -3,11 +3,7 @@ import { getUserProfile } from "@/lib/userStorage";
 
 export type ChannelType = "text" | "voice" | "stage";
 
-export const VOICE_CHANNEL_IDS = [
-  "voice-lounge",
-  "gaming-squad",
-  "stage-stream",
-] as const;
+export const VOICE_CHANNEL_IDS = ["voice-lounge"] as const;
 
 export type VoiceChannelId = (typeof VOICE_CHANNEL_IDS)[number];
 
