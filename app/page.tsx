@@ -7,7 +7,8 @@ import ChannelSidebar from "@/components/ChannelSidebar";
 import TopBar from "@/components/TopBar";
 import CallStage from "@/components/CallStage";
 import FloatingControls from "@/components/FloatingControls";
-import PreJoinLobby from "@/components/PreJoinLobby";
+import RoomEntryLobby from "@/components/RoomEntryLobby";
+import UserOnboardingModal from "@/components/UserOnboardingModal";
 import ChatDrawer from "@/components/ChatDrawer";
 import TextChannelChat from "@/components/TextChannelChat";
 import CreateChannelModal from "@/components/CreateChannelModal";
@@ -18,10 +19,14 @@ import { useParticipantNotificationSounds } from "@/hooks/useParticipantNotifica
 import { useChannelNavigation } from "@/hooks/useChannelNavigation";
 import { useScreenShare } from "@/hooks/useScreenShare";
 import { playNotificationSound } from "@/lib/notificationSounds";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useHasMounted } from "@/hooks/useHasMounted";
 
 export default function StreamSyncHub() {
   const router = useRouter();
   const { t } = useI18n();
+  const profile = useUserProfile();
+  const mounted = useHasMounted();
 
   // Mídia Local
   const [isCameraOn, setIsCameraOn] = useState(false);
@@ -164,6 +169,8 @@ export default function StreamSyncHub() {
 
   return (
     <div className="h-screen w-screen overflow-hidden flex bg-[#13131b] text-[#e4e1ed] relative">
+      <UserOnboardingModal open={mounted && !profile} />
+
       {/* 1. Left Primary Server Rail */}
       <ServerRail
         activeServerId={activeServerId}
@@ -184,6 +191,11 @@ export default function StreamSyncHub() {
         isDeafened={isDeafened}
         onToggleDeafen={() => setIsDeafened(!isDeafened)}
         participants={participants}
+        localUser={
+          mounted && profile
+            ? { name: profile.username, avatar: profile.avatarUrl }
+            : undefined
+        }
       />
 
       {/* 3. Main Stage Content Area */}
@@ -258,15 +270,7 @@ export default function StreamSyncHub() {
                 />
               </div>
             ) : (
-              <PreJoinLobby
-                channelName={activeChannelId}
-                onJoinCall={joinCall}
-                participants={participants}
-                isVideoOn={isCameraOn}
-                onToggleVideo={toggleCamera}
-                isMuted={!isMicOn}
-                onToggleMute={toggleMic}
-              />
+              <RoomEntryLobby />
             )
           ) : (
             <TextChannelChat

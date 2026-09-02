@@ -29,9 +29,7 @@ export function useChannelNavigation({
     initialConnected ? initialChannelId : null
   );
   const [isInCall, setIsInCall] = useState(initialConnected);
-  const [participants, setParticipants] = useState<Participant[]>(() =>
-    getChannelParticipants(initialChannelId, localUserState)
-  );
+  const [participants, setParticipants] = useState<Participant[]>([]);
 
   const playSound = useCallback(
     (type: Parameters<typeof playNotificationSound>[0]) => {
@@ -43,30 +41,12 @@ export function useChannelNavigation({
   );
 
   useEffect(() => {
-    if (!connectedChannelId) return;
+    if (!connectedChannelId) {
+      setParticipants([]);
+      return;
+    }
 
-    setParticipants((prev) => {
-      const you = prev.find((participant) => participant.isYou);
-      if (
-        you &&
-        you.isMuted === !localUserState.isMicOn &&
-        you.isVideoOn === localUserState.isCameraOn &&
-        you.isScreenSharing === localUserState.isScreenSharing
-      ) {
-        return prev;
-      }
-
-      return prev.map((participant) =>
-        participant.isYou
-          ? {
-              ...participant,
-              isMuted: !localUserState.isMicOn,
-              isVideoOn: localUserState.isCameraOn,
-              isScreenSharing: localUserState.isScreenSharing,
-            }
-          : participant
-      );
-    });
+    setParticipants(getChannelParticipants(connectedChannelId, localUserState));
   }, [
     connectedChannelId,
     localUserState.isMicOn,

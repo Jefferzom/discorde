@@ -1,24 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { LiveKitRoom } from "@livekit/components-react";
 import { AlertCircle, Loader2 } from "lucide-react";
-import CustomRoomLayout from "@/components/CustomRoomLayout";
 
 interface LiveKitRoomSessionProps {
   roomId: string;
   livekitUrl: string;
+  participantName: string;
   onDisconnected: () => void;
+  children?: ReactNode;
 }
 
 export default function LiveKitRoomSession({
   roomId,
   livekitUrl,
+  participantName,
   onDisconnected,
+  children,
 }: LiveKitRoomSessionProps) {
-  const [participantName] = useState(
-    () => `Membro_${Math.floor(Math.random() * 100)}`
-  );
   const [token, setToken] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
@@ -55,7 +55,7 @@ export default function LiveKitRoomSession({
 
   if (connectionError) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#13131b]">
+      <div className="flex-1 flex items-center justify-center bg-[#13131b] min-h-0">
         <div className="text-center max-w-md px-6">
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
           <p className="text-red-400 font-semibold mb-1">Falha na conexão</p>
@@ -67,7 +67,7 @@ export default function LiveKitRoomSession({
 
   if (!token) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#13131b]">
+      <div className="flex-1 flex items-center justify-center bg-[#13131b] min-h-0">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-10 h-10 text-[#6366f1] animate-spin" />
           <p className="text-[#c7c4d7] font-medium">Conectando...</p>
@@ -89,10 +89,10 @@ export default function LiveKitRoomSession({
       serverUrl={livekitUrl}
       connect
       data-lk-theme="default"
-      className="flex-1 min-h-0 h-full"
+      className="flex-1 min-h-0 h-full w-full relative flex flex-col"
       onDisconnected={onDisconnected}
     >
-      <CustomRoomLayout />
+      {children}
     </LiveKitRoom>
   );
 }

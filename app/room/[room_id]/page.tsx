@@ -10,11 +10,17 @@ import TopBar from "@/components/TopBar";
 import ChatDrawer from "@/components/ChatDrawer";
 import CreateChannelModal from "@/components/CreateChannelModal";
 import SettingsModal from "@/components/SettingsModal";
+import UserOnboardingModal from "@/components/UserOnboardingModal";
+import CustomRoomLayout from "@/components/CustomRoomLayout";
 import { Copy, Check, Radio, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/context";
 import { useParticipantNotificationSounds } from "@/hooks/useParticipantNotificationSounds";
 import { useChannelNavigation } from "@/hooks/useChannelNavigation";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useHasMounted } from "@/hooks/useHasMounted";
+import { useLiveKitMappedParticipants } from "@/hooks/useLiveKitMappedParticipants";
 import { playNotificationSound } from "@/lib/notificationSounds";
+import type { UserProfile } from "@/lib/userStorage";
 
 const LiveKitRoomSession = dynamic(
   () => import("@/components/LiveKitRoomSession"),
@@ -35,16 +41,24 @@ interface RoomPageProps {
   params: Promise<{ room_id: string }>;
 }
 
-export default function RoomPage({ params }: RoomPageProps) {
-  const router = useRouter();
+interface RoomConnectedLayoutProps {
+  profile: UserProfile;
+  roomId: string;
+}
+
+function RoomConnectedLayout({ profile, roomId }: RoomConnectedLayoutProps) {
   const { t } = useI18n();
-  const resolvedParams = use(params);
-  const roomId = resolvedParams?.room_id;
+  const participants = useLiveKitMappedParticipants(profile);
 
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [copied, setCopied] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
+  const [viewMode, setViewMode] = useState<"stage" | "grid">("stage");
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isMemberListOpen, setIsMemberListOpen] = useState(false);
+  const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const {
     activeServerId,
@@ -52,10 +66,8 @@ export default function RoomPage({ params }: RoomPageProps) {
     channelType,
     connectedChannelId,
     isInCall,
-    participants,
     selectChannel,
     selectServer,
-    leaveCall,
   } = useChannelNavigation({
     isDeafened,
     localUserState: {
@@ -68,73 +80,16 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   useParticipantNotificationSounds(participants);
 
-  const prevRoomIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!roomId || typeof roomId !== "string" || roomId.trim().length === 0) {
-      router.replace("/");
-      return;
-    }
-
-    if (prevRoomIdRef.current && prevRoomIdRef.current !== roomId && !isDeafened) {
-      playNotificationSound("roomSwitch");
-    } else if (!prevRoomIdRef.current && !isDeafened) {
-      playNotificationSound("roomSwitch");
-    }
-
-    prevRoomIdRef.current = roomId;
-  }, [roomId, router, isDeafened]);
-
-  const [viewMode, setViewMode] = useState<"stage" | "grid">("stage");
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isMemberListOpen, setIsMemberListOpen] = useState(false);
-  const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
   const handleCopyRoomLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const navigateToRoom = (newRoomId: string) => {
-    router.push(`/room/${newRoomId}`);
-  };
-
   const currentServer = servers.find((s) => s.id === activeServerId) || servers[1];
-  const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
-
-  if (!roomId) return null;
-
-  const renderMainContent = () => {
-    if (!livekitUrl) {
-      return (
-        <div className="flex-1 flex items-center justify-center bg-[#13131b]">
-          <p className="text-sm text-red-400">NEXT_PUBLIC_LIVEKIT_URL não configurada.</p>
-        </div>
-      );
-    }
-
-    return (
-      <LiveKitRoomSession
-        roomId={roomId}
-        livekitUrl={livekitUrl}
-        onDisconnected={() => {
-          leaveCall();
-          router.push("/");
-        }}
-      />
-    );
-  };
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex bg-[#13131b] text-[#e4e1ed] relative">
-      <ServerRail
-        activeServerId={activeServerId}
-        onSelectServer={selectServer}
-        onOpenCreateServer={() => navigateToRoom(crypto.randomUUID())}
-      />
-
+    <>
       <ChannelSidebar
         serverName={currentServer.name}
         activeChannelId={activeChannelId}
@@ -147,9 +102,10 @@ export default function RoomPage({ params }: RoomPageProps) {
         isDeafened={isDeafened}
         onToggleDeafen={() => setIsDeafened(!isDeafened)}
         participants={participants}
+        localUser={{ name: profile.username, avatar: profile.avatarUrl }}
       />
 
-      <main className="flex-1 ml-[312px] flex flex-col bg-[#13131b] relative min-w-0 h-screen overflow-hidden">
+      <main className="flex-1 ml-[312px] flex flex-col bg-[#13131b] relative min-w-0 h-full overflow-hidden">
         <div className="flex flex-col shrink-0">
           <TopBar
             channelName={activeChannelId}
@@ -204,7 +160,7 @@ export default function RoomPage({ params }: RoomPageProps) {
         </div>
 
         <div className="flex-1 flex overflow-hidden relative min-h-0">
-          {renderMainContent()}
+          <CustomRoomLayout />
 
           <ChatDrawer
             isOpen={isChatOpen}
@@ -222,7 +178,10 @@ export default function RoomPage({ params }: RoomPageProps) {
       <CreateChannelModal
         isOpen={isCreateChannelOpen}
         onClose={() => setIsCreateChannelOpen(false)}
-        onCreateChannel={() => navigateToRoom(crypto.randomUUID())}
+        onCreateChannel={() => {
+          const newRoomId = crypto.randomUUID();
+          window.location.href = `/room/${newRoomId}`;
+        }}
       />
 
       <SettingsModal
@@ -233,6 +192,71 @@ export default function RoomPage({ params }: RoomPageProps) {
         isVideoOn={isCameraOn}
         onToggleVideo={() => setIsCameraOn((prev) => !prev)}
       />
+    </>
+  );
+}
+
+export default function RoomPage({ params }: RoomPageProps) {
+  const router = useRouter();
+  const resolvedParams = use(params);
+  const roomId = resolvedParams?.room_id;
+  const profile = useUserProfile();
+  const mounted = useHasMounted();
+
+  const prevRoomIdRef = useRef<string | null>(null);
+  const [isDeafened] = useState(false);
+
+  useEffect(() => {
+    if (!roomId || typeof roomId !== "string" || roomId.trim().length === 0) {
+      router.replace("/");
+      return;
+    }
+
+    if (prevRoomIdRef.current && prevRoomIdRef.current !== roomId && !isDeafened) {
+      playNotificationSound("roomSwitch");
+    } else if (!prevRoomIdRef.current && !isDeafened) {
+      playNotificationSound("roomSwitch");
+    }
+
+    prevRoomIdRef.current = roomId;
+  }, [roomId, router, isDeafened]);
+
+  const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
+
+  if (!roomId) return null;
+
+  return (
+    <div className="h-screen w-screen overflow-hidden flex bg-[#13131b] text-[#e4e1ed] relative">
+      <UserOnboardingModal open={mounted && !profile} />
+
+      <ServerRail
+        activeServerId="gaming"
+        onSelectServer={() => {}}
+        onOpenCreateServer={() => router.push(`/room/${crypto.randomUUID()}`)}
+      />
+
+      <div className="flex-1 ml-[72px] flex min-w-0 h-screen">
+        {mounted && profile && livekitUrl ? (
+          <LiveKitRoomSession
+            roomId={roomId}
+            livekitUrl={livekitUrl}
+            participantName={profile.username}
+            onDisconnected={() => router.push("/")}
+          >
+            <RoomConnectedLayout profile={profile} roomId={roomId} />
+          </LiveKitRoomSession>
+        ) : mounted && profile && !livekitUrl ? (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-sm text-red-400">
+              NEXT_PUBLIC_LIVEKIT_URL não configurada.
+            </p>
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="w-10 h-10 text-[#6366f1] animate-spin" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -73,6 +73,7 @@ interface ChannelSidebarProps {
   isDeafened: boolean;
   onToggleDeafen: () => void;
   participants: Participant[];
+  localUser?: { name: string; avatar: string };
 }
 
 export default function ChannelSidebar({
@@ -87,9 +88,24 @@ export default function ChannelSidebar({
   isDeafened,
   onToggleDeafen,
   participants,
+  localUser,
 }: ChannelSidebarProps) {
   const { t } = useI18n();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const renderConnectedParticipants = () => {
+    if (participants.length === 0) {
+      return (
+        <p className="pl-2 py-1 text-[11px] text-[#908fa0] italic">
+          {t.lobby.noParticipants}
+        </p>
+      );
+    }
+
+    return participants.map((p) => (
+      <SidebarParticipant key={p.id} participant={p} t={t} />
+    ));
+  };
 
   return (
     <aside className="w-[240px] h-screen fixed left-[72px] top-0 bg-[#1b1b23] flex flex-col z-20 shadow-xl border-r border-[#292932]">
@@ -247,9 +263,7 @@ export default function ChannelSidebar({
 
           {connectedChannelId === "voice-lounge" && (
             <div className="pl-6 pr-1 py-1 flex flex-col gap-1">
-              {participants.map((p) => (
-                <SidebarParticipant key={p.id} participant={p} t={t} />
-              ))}
+              {renderConnectedParticipants()}
             </div>
           )}
         </div>
@@ -275,9 +289,7 @@ export default function ChannelSidebar({
 
           {connectedChannelId === "gaming-squad" && (
             <div className="pl-6 pr-1 py-1 flex flex-col gap-1">
-              {participants.map((p) => (
-                <SidebarParticipant key={p.id} participant={p} t={t} />
-              ))}
+              {renderConnectedParticipants()}
             </div>
           )}
         </div>
@@ -302,9 +314,7 @@ export default function ChannelSidebar({
 
           {connectedChannelId === "stage-stream" && (
             <div className="pl-6 pr-1 py-1 flex flex-col gap-1">
-              {participants.map((p) => (
-                <SidebarParticipant key={p.id} participant={p} t={t} />
-              ))}
+              {renderConnectedParticipants()}
             </div>
           )}
         </div>
@@ -318,15 +328,18 @@ export default function ChannelSidebar({
         >
           <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0">
             <img
-              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&h=120&q=80"
-              alt="Alex"
+              src={
+                localUser?.avatar ??
+                "https://api.dicebear.com/7.x/bottts/svg?seed=guest"
+              }
+              alt={localUser?.name ?? "User"}
               className="w-full h-full object-cover"
             />
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#13131b]" />
           </div>
           <div className="flex flex-col truncate">
             <span className="text-[13px] font-semibold text-[#e4e1ed] truncate leading-tight">
-              Alex
+              {localUser?.name ?? "Guest"}
             </span>
             <span className="text-[10px] text-[#908fa0] truncate">
               #1337 • {t.common.online}
