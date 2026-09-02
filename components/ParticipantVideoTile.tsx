@@ -4,8 +4,10 @@ import { useState } from "react";
 import { VideoTrack, isTrackReference, useIsSpeaking } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import type { TrackReference } from "@livekit/components-core";
-import { ExternalLink, LayoutGrid, Columns2, Volume2 } from "lucide-react";
+import { ExternalLink, LayoutGrid, Columns2, Pause, Volume2 } from "lucide-react";
 import { popOutFromTrackRef } from "@/lib/popOutVideo";
+import { useMediaPreferences } from "@/hooks/useMediaPreferences";
+import { useI18n } from "@/lib/i18n/context";
 
 interface ParticipantVideoTileProps {
   trackRef: TrackReference;
@@ -36,11 +38,24 @@ export default function ParticipantVideoTile({
   badge,
   volumeLabel,
 }: ParticipantVideoTileProps) {
+  const { t } = useI18n();
+  const mediaPrefs = useMediaPreferences();
   const hasVideo = isTrackReference(trackRef) && Boolean(trackRef.publication?.track);
   const isScreenShare = trackRef.source === Track.Source.ScreenShare;
   const isSpeaking = useIsSpeaking(trackRef.participant);
   const [volume, setVolume] = useState(100);
   const showVolume = !trackRef.participant.isLocal && !isScreenShare;
+  const isLocalCamera =
+    Boolean(isYou) && trackRef.source === Track.Source.Camera;
+  const mirrorClass =
+    isLocalCamera && mediaPrefs.mirrorLocalVideo ? "scale-x-[-1]" : "";
+  const isSharePaused =
+    isScreenShare &&
+    trackRef.participant.isLocal &&
+    Boolean(
+      (trackRef.publication as { isUpstreamPaused?: boolean } | undefined)
+        ?.isUpstreamPaused
+    );
 
   const sizeClass =
     variant === "stage"
@@ -81,7 +96,7 @@ export default function ParticipantVideoTile({
       {hasVideo ? (
         <VideoTrack
           trackRef={trackRef}
-          className="absolute inset-0 w-full h-full object-cover"
+          className={`absolute inset-0 w-full h-full object-cover ${mirrorClass}`}
         />
       ) : (
         <div className="absolute inset-0 bg-[#1b1b23] flex items-center justify-center">
@@ -92,6 +107,15 @@ export default function ParticipantVideoTile({
       )}
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none" />
+
+      {isSharePaused && (
+        <div className="absolute inset-0 z-[5] flex items-center justify-center bg-black/40 pointer-events-none">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 text-[10px] font-semibold">
+            <Pause className="w-3 h-3" />
+            {t.call.sharePaused}
+          </span>
+        </div>
+      )}
 
       <button
         type="button"

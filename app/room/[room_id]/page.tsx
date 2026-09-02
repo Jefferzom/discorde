@@ -13,6 +13,7 @@ import SettingsModal from "@/components/SettingsModal";
 import UserOnboardingModal from "@/components/UserOnboardingModal";
 import CustomRoomLayout from "@/components/CustomRoomLayout";
 import PreJoinLobby, { type JoinMediaPrefs } from "@/components/PreJoinLobby";
+import CallQualityBadge from "@/components/CallQualityBadge";
 import LeaveCallModal from "@/components/LeaveCallModal";
 import { getLeaveWarning, type LeaveWarning } from "@/lib/leaveCall";
 import { Copy, Check, Radio, Loader2 } from "lucide-react";
@@ -186,9 +187,7 @@ function RoomConnectedLayout({
                   {t.common.roomId}: <strong>{roomId}</strong>
                 </span>
               </span>
-              <span className="hidden md:inline-flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                ● LiveKit
-              </span>
+              <CallQualityBadge />
             </div>
 
             <button

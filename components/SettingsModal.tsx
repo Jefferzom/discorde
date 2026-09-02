@@ -17,6 +17,9 @@ import MediaDeviceSelector from "@/components/MediaDeviceSelector";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import PresenceStatusPicker, { PresenceDot } from "@/components/PresenceStatusPicker";
+import { useMediaPreferences } from "@/hooks/useMediaPreferences";
+import { useKrispSupported } from "@/hooks/useKrispSupported";
+import { setMediaPreferences } from "@/lib/mediaPreferences";
 import {
   generateDicebearAvatar,
   getUserProfile,
@@ -38,11 +41,12 @@ export default function SettingsModal({
 }: SettingsModalProps) {
   const { t, language, setLanguage } = useI18n();
   const profile = useUserProfile();
+  const mediaPrefs = useMediaPreferences();
   const mounted = useHasMounted();
+  const krispSupported = useKrispSupported();
   const [activeTab, setActiveTab] = useState<"voice" | "video" | "language" | "stitch" | "profile">("voice");
   const [inputVolume, setInputVolume] = useState(85);
   const [outputVolume, setOutputVolume] = useState(100);
-  const [krispEnabled, setKrispEnabled] = useState(true);
   const [selectedQuality, setSelectedQuality] = useState("1080p60");
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -263,32 +267,57 @@ export default function SettingsModal({
                 </div>
               </div>
 
-              {/* Krisp Noise Suppression */}
-              <div className="flex items-center justify-between p-3.5 bg-[#13131b] rounded-2xl border border-[#292932]">
-                <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-emerald-400" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-white">
-                      {t.settings.krispTitle}
-                    </span>
-                    <span className="text-[10px] text-[#908fa0]">
-                      {t.settings.krispDesc}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setKrispEnabled(!krispEnabled)}
-                  className={`w-10 h-6 rounded-full p-1 transition-colors ${
-                    krispEnabled ? "bg-emerald-600" : "bg-[#292932]"
+              <p className="text-[10px] text-[#908fa0]">{t.settings.audioFxHint}</p>
+
+              {(
+                [
+                  ["echoCancellation", t.settings.echoCancellation],
+                  ["autoGainControl", t.settings.autoGain],
+                  ["noiseSuppression", t.settings.noiseSuppression],
+                  ["krisp", t.settings.krispTitle],
+                ] as const
+              ).map(([key, label]) => {
+                const krispBlocked = key === "krisp" && krispSupported === false;
+                const enabled = mediaPrefs[key];
+                return (
+                <div
+                  key={key}
+                  className={`flex items-center justify-between p-3.5 bg-[#13131b] rounded-2xl border border-[#292932] ${
+                    krispBlocked ? "opacity-50" : ""
                   }`}
                 >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                      krispEnabled ? "translate-x-4" : "translate-x-0"
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-emerald-400" />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold text-white">{label}</span>
+                      {key === "krisp" && (
+                        <span className="text-[10px] text-[#908fa0]">
+                          {krispBlocked
+                            ? t.settings.krispUnsupported
+                            : t.settings.krispDesc}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={krispBlocked}
+                    onClick={() =>
+                      setMediaPreferences({ [key]: !mediaPrefs[key] })
+                    }
+                    className={`w-10 h-6 rounded-full p-1 transition-colors ${
+                      enabled ? "bg-emerald-600" : "bg-[#292932]"
                     }`}
-                  />
-                </button>
-              </div>
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                        enabled ? "translate-x-4" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+                );
+              })}
             </div>
           )}
 
@@ -297,7 +326,7 @@ export default function SettingsModal({
               <div>
                 <h3 className="text-base font-bold text-white">{t.settings.videoStream}</h3>
                 <p className="text-xs text-[#908fa0]">
-                  Set resolution and framerate for streams and camera.
+                  {t.settings.videoStreamDesc}
                 </p>
               </div>
 
@@ -334,6 +363,35 @@ export default function SettingsModal({
                   ))}
                 </div>
               </div>
+
+              {(
+                [
+                  ["backgroundBlur", t.settings.backgroundBlur],
+                  ["mirrorLocalVideo", t.settings.mirrorLocalVideo],
+                ] as const
+              ).map(([key, label]) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between p-3.5 bg-[#13131b] rounded-2xl border border-[#292932]"
+                >
+                  <span className="text-xs font-semibold text-white">{label}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMediaPreferences({ [key]: !mediaPrefs[key] })
+                    }
+                    className={`w-10 h-6 rounded-full p-1 transition-colors ${
+                      mediaPrefs[key] ? "bg-emerald-600" : "bg-[#292932]"
+                    }`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                        mediaPrefs[key] ? "translate-x-4" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 

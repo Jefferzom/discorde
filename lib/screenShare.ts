@@ -1,3 +1,6 @@
+import type { ScreenShareCaptureOptions } from "livekit-client";
+import { VideoPresets } from "livekit-client";
+
 export type ScreenShareMode = "screen" | "window" | "tab";
 
 export function getDisplayMediaConstraints(mode: ScreenShareMode): DisplayMediaStreamOptions {
@@ -12,6 +15,22 @@ export function getDisplayMediaConstraints(mode: ScreenShareMode): DisplayMediaS
       frameRate: { ideal: 30 },
     } as MediaTrackConstraints,
     audio: true,
+  };
+}
+
+export function toScreenShareCaptureOptions(
+  mode: ScreenShareMode
+): ScreenShareCaptureOptions {
+  const displaySurface =
+    mode === "screen" ? "monitor" : mode === "window" ? "window" : "browser";
+
+  return {
+    audio: true,
+    video: { displaySurface },
+    resolution: VideoPresets.h1080.resolution,
+    contentHint: "detail",
+    selfBrowserSurface: mode === "tab" ? "include" : "exclude",
+    preferCurrentTab: mode === "tab",
   };
 }
 

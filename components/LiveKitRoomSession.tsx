@@ -5,6 +5,7 @@ import { LiveKitRoom } from "@livekit/components-react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/context";
 import { consumeIntentionalDisconnect } from "@/lib/roomEvents";
+import { getLiveKitRoomOptions } from "@/lib/livekitRoomOptions";
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 
@@ -191,6 +192,7 @@ export default function LiveKitRoomSession({
       serverUrl={livekitUrl}
       connect
       connectOptions={{ autoSubscribe: true }}
+      options={getLiveKitRoomOptions()}
       data-lk-theme="default"
       className="flex-1 min-h-0 h-full w-full relative flex flex-col"
       onDisconnected={handleDisconnected}

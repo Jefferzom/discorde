@@ -12,7 +12,7 @@ import {
 } from "@livekit/components-react";
 import { ConnectionState, Track } from "livekit-client";
 import type { TrackReference } from "@livekit/components-core";
-import { Maximize2, Minimize2, Monitor, PhoneOff, Pin, ScreenShare } from "lucide-react";
+import { Maximize2, Minimize2, Monitor, Pause, PhoneOff, Pin, Play, ScreenShare, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n/context";
 import { clearIntentionalRoomNavigation, markIntentionalDisconnect } from "@/lib/roomEvents";
 import { getLeaveWarning, type LeaveWarning } from "@/lib/leaveCall";
@@ -20,9 +20,15 @@ import LeaveCallModal from "@/components/LeaveCallModal";
 import { useRouter } from "next/navigation";
 import CameraPiPOverlay from "@/components/CameraPiPOverlay";
 import MediaDeviceSelector from "@/components/MediaDeviceSelector";
+import ScreenShareMenu from "@/components/ScreenShareMenu";
 import ParticipantVideoTile, {
   StageLayoutToggle,
 } from "@/components/ParticipantVideoTile";
+import CallStatsHud from "@/components/CallStatsHud";
+import { useLiveKitScreenShare } from "@/hooks/useLiveKitScreenShare";
+import { useLocalTrackEffects } from "@/hooks/useLocalTrackEffects";
+import { useMediaPreferences } from "@/hooks/useMediaPreferences";
+import { setMediaPreferences } from "@/lib/mediaPreferences";
 
 const toggleBtnClass =
   "w-11 h-11 rounded-full flex items-center justify-center transition-all duration-150 shadow-md border-0 cursor-pointer data-[lk-enabled=true]:bg-[#1f1f27] data-[lk-enabled=true]:text-white data-[lk-enabled=true]:hover:bg-[#34343d] data-[lk-enabled=false]:bg-red-500/20 data-[lk-enabled=false]:text-red-400 data-[lk-enabled=false]:border data-[lk-enabled=false]:border-red-500/30 data-[lk-enabled=false]:hover:bg-red-500/30";
@@ -65,6 +71,9 @@ export default function CustomRoomLayout() {
   const { t } = useI18n();
   const router = useRouter();
   const room = useRoomContext();
+  const mediaPrefs = useMediaPreferences();
+  useLocalTrackEffects();
+  const screenShare = useLiveKitScreenShare();
   const [layoutMode, setLayoutMode] = useState<"spotlight" | "split">("spotlight");
   const [pipHidden, setPipHidden] = useState(false);
   const [shareStageFocus, setShareStageFocus] = useState<"screen" | "camera">("screen");
@@ -373,6 +382,19 @@ export default function CustomRoomLayout() {
       >
         {renderStageContent()}
 
+        <CallStatsHud />
+
+        {activeScreenShare &&
+          shareStageFocus === "screen" &&
+          screenShare.isPaused &&
+          activeScreenShare.participant.isLocal && (
+            <div className="absolute inset-0 z-[15] flex items-center justify-center bg-black/35 pointer-events-none">
+              <div className="px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 text-xs font-semibold">
+                {t.call.sharePaused}
+              </div>
+            </div>
+          )}
+
         {activeScreenShare && (
           <>
             <div className="absolute top-4 left-4 bg-[#13131b]/90 backdrop-blur-md px-3 py-1.5 rounded-xl flex items-center gap-2 border border-white/10 shadow-lg z-10">
@@ -499,15 +521,68 @@ export default function CustomRoomLayout() {
 
         <div className="w-px h-6 bg-[#464554]/60 mx-0.5" />
 
-        <TrackToggle
-          source={Track.Source.ScreenShare}
-          showIcon={false}
-          className="px-5 py-2.5 rounded-full font-semibold text-xs flex items-center gap-2 transition-all duration-150 shadow-lg border-0 cursor-pointer data-[lk-enabled=true]:bg-[#8083ff] data-[lk-enabled=true]:text-[#0d0096] data-[lk-enabled=true]:ring-2 data-[lk-enabled=true]:ring-indigo-400/40 data-[lk-enabled=false]:bg-[#1f1f27] data-[lk-enabled=false]:text-[#e4e1ed] data-[lk-enabled=false]:hover:bg-[#34343d]"
-          title={t.controls.shareScreen}
+        <button
+          type="button"
+          onClick={() =>
+            setMediaPreferences({ backgroundBlur: !mediaPrefs.backgroundBlur })
+          }
+          className={`${toggleBtnClass} ${
+            mediaPrefs.backgroundBlur ? "!bg-emerald-600 !text-white" : ""
+          }`}
+          title={t.call.backgroundBlur}
         >
-          <ScreenShare className="w-4 h-4 shrink-0" />
-          <span className="hidden sm:inline">{t.controls.shareScreen}</span>
-        </TrackToggle>
+          <Sparkles className="w-4 h-4" />
+        </button>
+
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => void screenShare.toggleShare()}
+            disabled={screenShare.busy}
+            className={`px-5 py-2.5 rounded-full font-semibold text-xs flex items-center gap-2 transition-all duration-150 shadow-lg border-0 cursor-pointer ${
+              screenShare.isScreenShareEnabled
+                ? "bg-[#8083ff] text-[#0d0096] ring-2 ring-indigo-400/40"
+                : "bg-[#1f1f27] text-[#e4e1ed] hover:bg-[#34343d]"
+            }`}
+            title={
+              screenShare.isScreenShareEnabled
+                ? t.controls.stopSharing
+                : t.controls.shareScreen
+            }
+          >
+            <ScreenShare className="w-4 h-4 shrink-0" />
+            <span className="hidden sm:inline">
+              {screenShare.isScreenShareEnabled
+                ? t.controls.stopSharing
+                : t.controls.shareScreen}
+            </span>
+          </button>
+          <ScreenShareMenu
+            compact
+            currentMode={screenShare.mode}
+            onChangeMode={(mode) => void screenShare.changeMode(mode)}
+          />
+          {screenShare.isScreenShareEnabled && (
+            <button
+              type="button"
+              onClick={() => void screenShare.togglePause()}
+              className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${
+                screenShare.isPaused
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                  : "bg-[#1f1f27] text-[#e4e1ed] hover:bg-[#34343d]"
+              }`}
+              title={
+                screenShare.isPaused ? t.call.resumeShare : t.call.pauseShare
+              }
+            >
+              {screenShare.isPaused ? (
+                <Play className="w-4 h-4" />
+              ) : (
+                <Pause className="w-4 h-4" />
+              )}
+            </button>
+          )}
+        </div>
 
         <button
           type="button"

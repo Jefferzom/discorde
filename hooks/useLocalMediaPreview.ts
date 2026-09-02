@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSavedMediaDeviceId } from "@/lib/mediaDeviceStorage";
+import { getMediaPreferences } from "@/lib/mediaPreferences";
 
 interface UseLocalMediaPreviewOptions {
   videoOn: boolean;
@@ -38,10 +39,16 @@ export function useLocalMediaPreview({
       setMicLevel(0);
 
       const audioId = getSavedMediaDeviceId("audioinput");
+      const prefs = getMediaPreferences();
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          audio: audioId ? { deviceId: { ideal: audioId } } : true,
+          audio: {
+            echoCancellation: prefs.echoCancellation,
+            autoGainControl: prefs.autoGainControl,
+            noiseSuppression: prefs.noiseSuppression,
+            ...(audioId ? { deviceId: { ideal: audioId } } : {}),
+          },
           video: videoOn,
         });
 

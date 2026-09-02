@@ -8,6 +8,7 @@ import { useI18n } from "@/lib/i18n/context";
 interface ScreenShareMenuProps {
   currentMode: ScreenShareMode;
   onChangeMode: (mode: ScreenShareMode) => void;
+  compact?: boolean;
 }
 
 const MODES: { id: ScreenShareMode; icon: React.ReactNode }[] = [
@@ -19,6 +20,7 @@ const MODES: { id: ScreenShareMode; icon: React.ReactNode }[] = [
 export default function ScreenShareMenu({
   currentMode,
   onChangeMode,
+  compact = false,
 }: ScreenShareMenuProps) {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
@@ -32,17 +34,28 @@ export default function ScreenShareMenu({
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="px-3 py-2.5 rounded-full font-semibold text-xs flex items-center gap-1.5 bg-[#6366f1]/30 text-indigo-100 hover:bg-[#6366f1]/50 border border-indigo-400/30 transition-all duration-150 shadow-md"
+        className={
+          compact
+            ? "p-2 rounded-full bg-[#1f1f27] text-[#c7c4d7] hover:bg-[#34343d] hover:text-white border-0 flex items-center justify-center"
+            : "px-3 py-2.5 rounded-full font-semibold text-xs flex items-center gap-1.5 bg-[#6366f1]/30 text-indigo-100 hover:bg-[#6366f1]/50 border border-indigo-400/30 transition-all duration-150 shadow-md"
+        }
         title={t.controls.changeShareType}
       >
-        {MODES.find((m) => m.id === currentMode)?.icon}
-        <span className="hidden sm:inline max-w-[90px] truncate">
-          {labels[currentMode]}
-        </span>
-        <ChevronDown
-          className={`w-3.5 h-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`}
-        />
+        {compact ? (
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        ) : (
+          <>
+            {MODES.find((m) => m.id === currentMode)?.icon}
+            <span className="hidden sm:inline max-w-[90px] truncate">
+              {labels[currentMode]}
+            </span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            />
+          </>
+        )}
       </button>
 
       {isOpen && (

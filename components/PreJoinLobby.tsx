@@ -17,6 +17,7 @@ import { useI18n } from "@/lib/i18n/context";
 import { useLocalMediaPreview } from "@/hooks/useLocalMediaPreview";
 import { fetchRoomOccupancy } from "@/lib/roomsApi";
 import MediaDeviceSelector from "@/components/MediaDeviceSelector";
+import { useMediaPreferences } from "@/hooks/useMediaPreferences";
 
 export interface JoinMediaPrefs {
   audio: boolean;
@@ -41,6 +42,7 @@ export default function PreJoinLobby({
   onBack,
 }: PreJoinLobbyProps) {
   const { t } = useI18n();
+  const mediaPrefs = useMediaPreferences();
   const [isVideoOn, setIsVideoOn] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [occupancy, setOccupancy] = useState<number | null>(null);
@@ -78,7 +80,9 @@ export default function PreJoinLobby({
               autoPlay
               playsInline
               muted
-              className={`absolute inset-0 w-full h-full object-cover scale-x-[-1] ${
+              className={`absolute inset-0 w-full h-full object-cover ${
+                mediaPrefs.mirrorLocalVideo ? "scale-x-[-1]" : ""
+              } ${
                 isVideoOn ? "opacity-100" : "opacity-0 pointer-events-none"
               }`}
             />

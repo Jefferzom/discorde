@@ -5,6 +5,7 @@ import { VideoTrack, useIsSpeaking } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-core";
 import { ExternalLink, GripVertical, Pin, X } from "lucide-react";
 import { popOutFromTrackRef } from "@/lib/popOutVideo";
+import { useMediaPreferences } from "@/hooks/useMediaPreferences";
 
 interface CameraPiPOverlayProps {
   trackRef: TrackReference;
@@ -31,6 +32,7 @@ export default function CameraPiPOverlay({
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const isSpeaking = useIsSpeaking(trackRef.participant);
+  const mediaPrefs = useMediaPreferences();
 
   const trackSid = trackRef.publication?.trackSid;
 
@@ -124,7 +126,11 @@ export default function CameraPiPOverlay({
     >
       <VideoTrack
         trackRef={trackRef}
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+        className={`absolute inset-0 w-full h-full object-cover pointer-events-none ${
+          trackRef.participant.isLocal && mediaPrefs.mirrorLocalVideo
+            ? "scale-x-[-1]"
+            : ""
+        }`}
       />
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />

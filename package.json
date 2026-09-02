@@ -11,6 +11,8 @@
   "dependencies": {
     "@livekit/components-react": "^2.9.24",
     "@livekit/components-styles": "^1.2.0",
+    "@livekit/krisp-noise-filter": "^0.4.4",
+    "@livekit/track-processors": "^0.7.2",
     "@supabase/supabase-js": "^2.112.4",
     "livekit-client": "^2.22.2",
     "lucide-react": "^1.39.0",
