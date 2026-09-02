@@ -74,7 +74,7 @@ export default function PreJoinLobby({
     <div className="flex-1 bg-[#0d0d15] flex items-center justify-center p-6 select-none overflow-y-auto min-h-0">
       <div className="max-w-3xl w-full bg-[#1b1b23] border border-[#292932] rounded-3xl p-8 shadow-2xl flex flex-col md:flex-row gap-8">
         <div className="flex-1 flex flex-col gap-4">
-          <div className="relative aspect-video bg-[#13131b] rounded-2xl overflow-hidden border border-[#292932] flex items-center justify-center shadow-inner">
+          <div className="relative aspect-video bg-[#13131b] rounded-2xl overflow-hidden border border-[#292932] shadow-inner">
             <video
               ref={videoRef}
               autoPlay
@@ -88,44 +88,49 @@ export default function PreJoinLobby({
             />
 
             {!isVideoOn && (
-              <div className="flex flex-col items-center gap-3 z-10">
-                <div className="w-20 h-20 rounded-full bg-[#1f1f27] border border-white/10 flex items-center justify-center overflow-hidden shadow-lg">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 px-6 py-4 pb-14 text-center">
+                <div className="w-14 h-14 rounded-full bg-[#1f1f27] border border-white/10 flex items-center justify-center overflow-hidden shadow-lg shrink-0">
                   <img
                     src={avatarUrl}
                     alt={displayName}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <span className="text-xs text-[#908fa0]">{t.stage.cameraOff}</span>
+                <span className="text-xs font-semibold text-white truncate max-w-full">
+                  {displayName}
+                </span>
+                <span className="text-[11px] text-[#908fa0]">{t.stage.cameraOff}</span>
               </div>
             )}
 
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-[#13131b]/90 backdrop-blur-md px-4 py-1.5 rounded-full flex items-center gap-3 border border-white/10 shadow-lg z-10">
-              <button
-                type="button"
-                onClick={() => setIsVideoOn((prev) => !prev)}
-                className={`p-2 rounded-full transition-colors ${
-                  isVideoOn
-                    ? "bg-[#6366f1] text-white"
-                    : "bg-[#292932] text-red-400 hover:text-white"
-                }`}
-                title={isVideoOn ? t.controls.turnOffCamera : t.controls.turnOnCamera}
-              >
-                {isVideoOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-              </button>
+            <div className="absolute inset-x-0 bottom-0 z-20 flex justify-center px-4 pb-3 pt-8 bg-gradient-to-t from-[#13131b]/95 via-[#13131b]/60 to-transparent pointer-events-none">
+              <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-[#13131b]/90 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsVideoOn((prev) => !prev)}
+                  className={`p-2 rounded-full transition-colors ${
+                    isVideoOn
+                      ? "bg-[#6366f1] text-white"
+                      : "bg-[#292932] text-red-400 hover:text-white"
+                  }`}
+                  title={isVideoOn ? t.controls.turnOffCamera : t.controls.turnOnCamera}
+                >
+                  {isVideoOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setIsMuted((prev) => !prev)}
-                className={`p-2 rounded-full transition-colors ${
-                  !isMuted
-                    ? "bg-[#6366f1] text-white"
-                    : "bg-[#292932] text-red-400 hover:text-white"
-                }`}
-                title={isMuted ? t.controls.unmuteMicrophone : t.controls.muteMicrophone}
-              >
-                {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setIsMuted((prev) => !prev)}
+                  className={`p-2 rounded-full transition-colors ${
+                    !isMuted
+                      ? "bg-[#6366f1] text-white"
+                      : "bg-[#292932] text-red-400 hover:text-white"
+                  }`}
+                  title={isMuted ? t.controls.unmuteMicrophone : t.controls.muteMicrophone}
+                >
+                  {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           </div>
 
