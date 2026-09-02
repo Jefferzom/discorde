@@ -37,7 +37,7 @@ const DEFAULT_MESSAGES: SimulatedChatMessage[] = [
 export default function TextChannelChat({
   channelName,
   serverName,
-  initialMessages = DEFAULT_MESSAGES,
+  initialMessages,
   variant = "full",
 }: TextChannelChatProps) {
   const { t } = useI18n();

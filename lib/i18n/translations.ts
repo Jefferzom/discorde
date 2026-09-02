@@ -31,7 +31,7 @@ export const translations = {
       devChat: "chat-dev",
       resources: "recursos",
       voiceLounge: "sala-de-voz",
-      gamingSquad: "esquadrao-jogos",
+      gamingSquad: "teste-sala",
       stageKeynote: "palco-apresentacao",
       createChannel: "Criar Canal",
       serverSettings: "Configurações do Servidor",
@@ -112,6 +112,14 @@ export const translations = {
       optional: "opcional",
       continue: "Continuar",
     },
+    voiceChannel: {
+      idleTitle: "Nenhuma chamada ativa",
+      idleDesc:
+        "Você está no canal de voz #{channel}. Este é apenas o menu do servidor — ainda não há vídeochamada aqui.",
+      createRoomHint:
+        "Para conversar por vídeo com outras pessoas, crie uma sala LiveKit ou abra um link de convite.",
+      createRoomBtn: "Criar sala de vídeo",
+    },
     chat: {
       channelChat: "Chat",
       onlineMembers: "Membros Online",
@@ -191,7 +199,7 @@ export const translations = {
       devChat: "dev-chat",
       resources: "resources",
       voiceLounge: "voice-lounge",
-      gamingSquad: "gaming-squad",
+      gamingSquad: "test-room",
       stageKeynote: "stage-keynote",
       createChannel: "Create Channel",
       serverSettings: "Server Settings",
@@ -271,6 +279,14 @@ export const translations = {
       avatarPreview: "Avatar preview",
       optional: "optional",
       continue: "Continue",
+    },
+    voiceChannel: {
+      idleTitle: "No active call",
+      idleDesc:
+        "You are viewing the voice channel #{channel}. This is just the server menu — there is no video call here yet.",
+      createRoomHint:
+        "To talk on video with others, create a LiveKit room or open an invite link.",
+      createRoomBtn: "Create video room",
     },
     chat: {
       channelChat: "Chat",

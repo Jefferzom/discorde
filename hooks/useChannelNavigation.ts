@@ -16,15 +16,23 @@ interface UseChannelNavigationOptions {
   initialChannelId?: string;
 }
 
+function getInitialChannelType(channelId: string): ChannelType {
+  if (channelId === "stage-stream") return "stage";
+  if (isVoiceChannel(channelId)) return "voice";
+  return "text";
+}
+
 export function useChannelNavigation({
   isDeafened,
   localUserState,
-  initialConnected = true,
-  initialChannelId = "voice-lounge",
+  initialConnected = false,
+  initialChannelId = "general",
 }: UseChannelNavigationOptions) {
   const [activeServerId, setActiveServerId] = useState("gaming");
   const [activeChannelId, setActiveChannelId] = useState(initialChannelId);
-  const [channelType, setChannelType] = useState<ChannelType>("voice");
+  const [channelType, setChannelType] = useState<ChannelType>(() =>
+    getInitialChannelType(initialChannelId)
+  );
   const [connectedChannelId, setConnectedChannelId] = useState<string | null>(
     initialConnected ? initialChannelId : null
   );

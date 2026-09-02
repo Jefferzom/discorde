@@ -68,6 +68,24 @@ export function hasUserProfile(): boolean {
   return getUserProfile() !== null;
 }
 
+/** Usuário concluiu onboarding e pode entrar em salas de voz. */
+export function canJoinVoiceRoom(): boolean {
+  if (typeof window === "undefined") return false;
+  const profile = getUserProfile();
+  const username = localStorage.getItem(USERNAME_STORAGE_KEY)?.trim();
+  return (
+    profile !== null &&
+    !!username &&
+    username !== DEFAULT_USERNAME &&
+    !!localStorage.getItem(USER_PROFILE_STORAGE_KEY)
+  );
+}
+
+/** ID da sala LiveKit para um canal de voz fixo do servidor. */
+export function getVoiceChannelRoomId(channelId: string): string {
+  return channelId;
+}
+
 export function setUserProfile(profile: UserProfile): void {
   if (typeof window === "undefined") return;
 

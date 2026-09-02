@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   Folder,
   Code2,
-  Bell
+  Bell,
+  Video,
 } from "lucide-react";
 import { Participant } from "../types/streamsync";
 import { useI18n } from "@/lib/i18n/context";
@@ -46,6 +47,14 @@ function SidebarParticipant({
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
+        {p.isVideoOn && (
+          <span
+            className="px-1 py-0.5 text-[9px] bg-indigo-500/20 text-indigo-300 font-bold uppercase rounded border border-indigo-500/30 flex items-center gap-0.5"
+            title={t.stage.cameraActive}
+          >
+            <Video className="w-2.5 h-2.5" />
+          </span>
+        )}
         {p.isScreenSharing && (
           <span className="px-1 py-0.2 text-[9px] bg-red-500/20 text-red-400 font-bold uppercase rounded border border-red-500/30">
             {t.common.live}
@@ -108,7 +117,7 @@ export default function ChannelSidebar({
   };
 
   return (
-    <aside className="w-[240px] h-screen fixed left-[72px] top-0 bg-[#1b1b23] flex flex-col z-20 shadow-xl border-r border-[#292932]">
+    <aside className="w-[311px] h-screen fixed left-[72px] top-0 bg-[#1b1b23] flex flex-col z-20 shadow-xl border-r border-[#292932]">
       {/* Server Header */}
       <div className="relative">
         <button

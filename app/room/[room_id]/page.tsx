@@ -20,7 +20,8 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { useLiveKitMappedParticipants } from "@/hooks/useLiveKitMappedParticipants";
 import { playNotificationSound } from "@/lib/notificationSounds";
-import type { UserProfile } from "@/lib/userStorage";
+import { getChannelDisplayName } from "@/lib/channelNames";
+import { canJoinVoiceRoom, type UserProfile } from "@/lib/userStorage";
 
 const LiveKitRoomSession = dynamic(
   () => import("@/components/LiveKitRoomSession"),
@@ -51,7 +52,7 @@ function RoomConnectedLayout({ profile, roomId }: RoomConnectedLayoutProps) {
   const participants = useLiveKitMappedParticipants(profile);
 
   const [isMicOn, setIsMicOn] = useState(true);
-  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [isCameraOn, setIsCameraOn] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
   const [viewMode, setViewMode] = useState<"stage" | "grid">("stage");
@@ -76,9 +77,12 @@ function RoomConnectedLayout({ profile, roomId }: RoomConnectedLayoutProps) {
       isScreenSharing: false,
     },
     initialConnected: true,
+    initialChannelId: roomId,
   });
 
   useParticipantNotificationSounds(participants);
+
+  const channelDisplayName = getChannelDisplayName(roomId, t);
 
   const handleCopyRoomLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -105,10 +109,10 @@ function RoomConnectedLayout({ profile, roomId }: RoomConnectedLayoutProps) {
         localUser={{ name: profile.username, avatar: profile.avatarUrl }}
       />
 
-      <main className="flex-1 ml-[312px] flex flex-col bg-[#13131b] relative min-w-0 h-full overflow-hidden">
+      <main className="flex-1 ml-[311px] flex flex-col bg-[#13131b] relative min-w-0 h-full overflow-hidden">
         <div className="flex flex-col shrink-0">
           <TopBar
-            channelName={activeChannelId}
+            channelName={channelDisplayName}
             channelType={channelType}
             viewMode={viewMode}
             onToggleViewMode={() =>
@@ -169,7 +173,7 @@ function RoomConnectedLayout({ profile, roomId }: RoomConnectedLayoutProps) {
               setIsChatOpen(false);
               setIsMemberListOpen(false);
             }}
-            channelName={activeChannelId}
+            channelName={channelDisplayName}
             participants={participants}
           />
         </div>
@@ -227,7 +231,7 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   return (
     <div className="h-screen w-screen overflow-hidden flex bg-[#13131b] text-[#e4e1ed] relative">
-      <UserOnboardingModal open={mounted && !profile} />
+      <UserOnboardingModal open={mounted && !canJoinVoiceRoom()} />
 
       <ServerRail
         activeServerId="gaming"
@@ -236,7 +240,7 @@ export default function RoomPage({ params }: RoomPageProps) {
       />
 
       <div className="flex-1 ml-[72px] flex min-w-0 h-screen">
-        {mounted && profile && livekitUrl ? (
+        {mounted && canJoinVoiceRoom() && profile && livekitUrl ? (
           <LiveKitRoomSession
             roomId={roomId}
             livekitUrl={livekitUrl}
@@ -245,7 +249,7 @@ export default function RoomPage({ params }: RoomPageProps) {
           >
             <RoomConnectedLayout profile={profile} roomId={roomId} />
           </LiveKitRoomSession>
-        ) : mounted && profile && !livekitUrl ? (
+        ) : mounted && canJoinVoiceRoom() && profile && !livekitUrl ? (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-sm text-red-400">
               NEXT_PUBLIC_LIVEKIT_URL não configurada.

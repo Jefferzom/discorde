@@ -83,7 +83,7 @@ export default function LiveKitRoomSession({
   return (
     <LiveKitRoom
       key={token}
-      video
+      video={false}
       audio
       token={token}
       serverUrl={livekitUrl}
