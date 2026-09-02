@@ -13,6 +13,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/context";
+import MediaDeviceSelector from "@/components/MediaDeviceSelector";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import {
@@ -220,9 +221,12 @@ export default function SettingsModal({
             <div className="flex flex-col gap-5">
               <div>
                 <h3 className="text-base font-bold text-white">{t.settings.voiceAudio}</h3>
-                <p className="text-xs text-[#908fa0]">
-                  Configure your microphone and speaker devices.
-                </p>
+                <p className="text-xs text-[#908fa0]">{t.settings.voiceAudioDesc}</p>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <MediaDeviceSelector kind="audioinput" variant="field" dropUp={false} />
+                <MediaDeviceSelector kind="audiooutput" variant="field" dropUp={false} />
               </div>
 
               {/* Volume Sliders */}

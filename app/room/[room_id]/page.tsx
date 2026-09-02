@@ -20,9 +20,13 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useHasMounted } from "@/hooks/useHasMounted";
 import { useLiveKitMappedParticipants } from "@/hooks/useLiveKitMappedParticipants";
 import { playNotificationSound } from "@/lib/notificationSounds";
-import { getChannelDisplayName } from "@/lib/channelNames";
+import { getRoomDisplayName } from "@/lib/roomStorage";
 import { useRoomSessionActions } from "@/hooks/useRoomSessionActions";
-import { consumeIntentionalRoomNavigation } from "@/lib/roomEvents";
+import { useRoomContext } from "@livekit/components-react";
+import {
+  clearIntentionalRoomNavigation,
+  consumeIntentionalRoomNavigation,
+} from "@/lib/roomEvents";
 import { canJoinVoiceRoom, type UserProfile } from "@/lib/userStorage";
 
 const LiveKitRoomSession = dynamic(
@@ -60,6 +64,8 @@ function RoomConnectedLayout({
   creatingRoom = false,
 }: RoomConnectedLayoutProps) {
   const { t } = useI18n();
+  const router = useRouter();
+  const room = useRoomContext();
   const participants = useLiveKitMappedParticipants(profile);
 
   const [isMicOn, setIsMicOn] = useState(true);
@@ -93,12 +99,18 @@ function RoomConnectedLayout({
 
   useParticipantNotificationSounds(participants);
 
-  const channelDisplayName = getChannelDisplayName(roomId, t);
+  const channelDisplayName = getRoomDisplayName(roomId, t.rooms.unnamed);
 
   const handleCopyRoomLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDisconnectVoice = async () => {
+    clearIntentionalRoomNavigation();
+    await room.disconnect(true);
+    router.push("/");
   };
 
   const currentServer = servers.find((s) => s.id === activeServerId) || servers[1];
@@ -122,9 +134,10 @@ function RoomConnectedLayout({
         onJoinRoom={onJoinRoom}
         onCreateRoom={onCreateRoom}
         creatingRoom={creatingRoom}
+        onDisconnectVoice={handleDisconnectVoice}
       />
 
-      <main className="flex-1 ml-[311px] flex flex-col bg-[#13131b] relative min-w-0 h-full overflow-hidden">
+      <main className="flex-1 ml-[240px] flex flex-col bg-[#13131b] relative min-w-0 h-full overflow-hidden">
         <div className="flex flex-col shrink-0">
           <TopBar
             channelName={channelDisplayName}
@@ -146,11 +159,14 @@ function RoomConnectedLayout({
             isInCall={isInCall}
           />
 
-          <div className="bg-[#1b1b23] border-b border-[#292932] px-4 py-2 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono border border-indigo-500/30">
-                <Radio className="w-3 h-3 text-indigo-400 animate-pulse" />
-                <span>
+          <div className="bg-[#1b1b23] border-b border-[#292932] px-4 py-2 flex items-center justify-between gap-3 text-xs min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span
+                className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono border border-indigo-500/30 min-w-0 max-w-full"
+                title={`${t.common.roomId}: ${roomId}`}
+              >
+                <Radio className="w-3 h-3 text-indigo-400 animate-pulse shrink-0" />
+                <span className="truncate">
                   {t.common.roomId}: <strong>{roomId}</strong>
                 </span>
               </span>
@@ -161,7 +177,7 @@ function RoomConnectedLayout({
 
             <button
               onClick={handleCopyRoomLink}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#292932] hover:bg-[#34343d] text-[#c7c4d7] hover:text-white transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#292932] hover:bg-[#34343d] text-[#c7c4d7] hover:text-white transition-colors shrink-0"
             >
               {copied ? (
                 <>
@@ -188,8 +204,10 @@ function RoomConnectedLayout({
               setIsChatOpen(false);
               setIsMemberListOpen(false);
             }}
+            channelId="voice-lounge"
             channelName={channelDisplayName}
             participants={participants}
+            currentUser={{ name: profile.username, avatar: profile.avatarUrl }}
           />
         </div>
       </main>

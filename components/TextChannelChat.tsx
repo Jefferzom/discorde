@@ -1,46 +1,32 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Hash, Send, Smile, Paperclip } from "lucide-react";
 import { useI18n } from "@/lib/i18n/context";
-import {
-  SimulatedChatMessage,
-  useSimulatedTextChat,
-} from "@/hooks/useSimulatedTextChat";
+import { useTextChannelChat, type ChatMessage } from "@/hooks/useTextChannelChat";
+import MessageContextMenu from "@/components/MessageContextMenu";
 
 interface TextChannelChatProps {
+  channelId: string;
   channelName: string;
   serverName?: string;
-  initialMessages?: SimulatedChatMessage[];
+  currentUser?: { name: string; avatar: string };
   variant?: "full" | "compact";
 }
 
-const DEFAULT_MESSAGES: SimulatedChatMessage[] = [
-  {
-    id: "m1",
-    sender: "Sarah",
-    time: "18:12",
-    text: "Hey everyone! The stream latency on 1080p60 is super smooth 🔥",
-    avatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&h=160&q=80",
-  },
-  {
-    id: "m2",
-    sender: "Mike",
-    time: "18:14",
-    text: "Can you scroll down on the React component? Wanted to see the peer mesh connection.",
-    avatar:
-      "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=160&h=160&q=80",
-  },
-];
-
 export default function TextChannelChat({
+  channelId,
   channelName,
   serverName,
-  initialMessages,
+  currentUser,
   variant = "full",
 }: TextChannelChatProps) {
   const { t } = useI18n();
+  const [contextMenu, setContextMenu] = useState<{
+    message: ChatMessage;
+    x: number;
+    y: number;
+  } | null>(null);
 
   const {
     messages,
@@ -49,12 +35,30 @@ export default function TextChannelChat({
     handleSendMessage,
     handleKeyDown,
     messagesEndRef,
-  } = useSimulatedTextChat({
-    initialMessages,
-    simulateReply: false,
-  });
+    editingMessageId,
+    editDraft,
+    setEditDraft,
+    startEditing,
+    cancelEditing,
+    confirmEditing,
+    deleteMessage,
+    canManageMessage,
+  } = useTextChannelChat({ channelId, currentUser });
 
   const isCompact = variant === "compact";
+
+  const openContextMenu = (
+    event: React.MouseEvent,
+    message: ChatMessage
+  ) => {
+    if (!canManageMessage(message)) return;
+    event.preventDefault();
+    setContextMenu({
+      message,
+      x: Math.min(event.clientX, window.innerWidth - 200),
+      y: Math.min(event.clientY, window.innerHeight - 120),
+    });
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-[#1f1f27] h-full overflow-hidden">
@@ -75,7 +79,6 @@ export default function TextChannelChat({
         </div>
       )}
 
-      {/* Lista de mensagens */}
       <div
         className={`flex-1 overflow-y-auto flex flex-col gap-3 custom-scrollbar ${
           isCompact ? "p-4" : "p-6 gap-4"
@@ -91,13 +94,22 @@ export default function TextChannelChat({
         )}
 
         {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} compact={isCompact} />
+          <MessageBubble
+            key={message.id}
+            message={message}
+            compact={isCompact}
+            isEditing={editingMessageId === message.id}
+            editDraft={editDraft}
+            onEditDraftChange={setEditDraft}
+            onConfirmEdit={confirmEditing}
+            onCancelEdit={cancelEditing}
+            onContextMenu={(event) => openContextMenu(event, message)}
+          />
         ))}
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <div className={`bg-[#1b1b23] border-t border-[#292932] shrink-0 ${isCompact ? "p-3" : "p-4"}`}>
         <form
           onSubmit={(e) => {
@@ -123,7 +135,8 @@ export default function TextChannelChat({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            className={`flex-1 bg-transparent text-[#e4e1ed] placeholder:text-[#908fa0] focus:outline-none ${
+            disabled={!currentUser?.name}
+            className={`flex-1 bg-transparent text-[#e4e1ed] placeholder:text-[#908fa0] focus:outline-none disabled:opacity-50 ${
               isCompact ? "text-xs" : "text-sm"
             }`}
           />
@@ -138,12 +151,12 @@ export default function TextChannelChat({
             </button>
             <button
               type="submit"
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || !currentUser?.name}
               className={`transition-all font-semibold ${
                 isCompact
-                  ? `p-1 rounded-lg ${inputValue.trim() ? "text-[#6366f1] hover:text-[#8083ff]" : "text-[#464554] cursor-not-allowed"}`
+                  ? `p-1 rounded-lg ${inputValue.trim() && currentUser?.name ? "text-[#6366f1] hover:text-[#8083ff]" : "text-[#464554] cursor-not-allowed"}`
                   : `px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 ${
-                      inputValue.trim()
+                      inputValue.trim() && currentUser?.name
                         ? "bg-[#6366f1] text-white hover:bg-[#8083ff]"
                         : "text-[#464554] cursor-not-allowed"
                     }`
@@ -161,6 +174,16 @@ export default function TextChannelChat({
           </div>
         </form>
       </div>
+
+      {contextMenu && (
+        <MessageContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onEdit={() => startEditing(contextMenu.message)}
+          onDelete={() => deleteMessage(contextMenu.message.id)}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }
@@ -168,9 +191,21 @@ export default function TextChannelChat({
 function MessageBubble({
   message,
   compact,
+  isEditing,
+  editDraft,
+  onEditDraftChange,
+  onConfirmEdit,
+  onCancelEdit,
+  onContextMenu,
 }: {
-  message: SimulatedChatMessage;
+  message: ChatMessage;
   compact?: boolean;
+  isEditing: boolean;
+  editDraft: string;
+  onEditDraftChange: (value: string) => void;
+  onConfirmEdit: () => void;
+  onCancelEdit: () => void;
+  onContextMenu: (event: React.MouseEvent) => void;
 }) {
   const { t } = useI18n();
 
@@ -186,6 +221,7 @@ function MessageBubble({
 
   return (
     <div
+      onContextMenu={onContextMenu}
       className={`flex gap-3 group transition-colors rounded-xl ${
         message.isYou
           ? "flex-row-reverse text-right bg-[#6366f1]/5 border border-[#6366f1]/15 hover:bg-[#6366f1]/10"
@@ -202,8 +238,8 @@ function MessageBubble({
         />
       )}
 
-      <div className={`flex-1 flex flex-col ${message.isYou ? "items-end" : "items-start"}`}>
-        <div className={`flex items-center gap-2 ${message.isYou ? "flex-row-reverse" : ""}`}>
+      <div className={`flex-1 flex flex-col min-w-0 ${message.isYou ? "items-end" : "items-start"}`}>
+        <div className={`flex items-center gap-2 flex-wrap ${message.isYou ? "flex-row-reverse" : ""}`}>
           <span
             className={`font-bold hover:underline cursor-pointer ${
               message.isYou ? "text-[#adc6ff]" : "text-white"
@@ -215,14 +251,65 @@ function MessageBubble({
           <span className={`text-[#908fa0] ${compact ? "text-[10px]" : "text-[11px]"}`}>
             {message.time}
           </span>
+          {message.isEdited && !message.isDeleted && (
+            <span
+              className={`text-[#908fa0] italic ${compact ? "text-[10px]" : "text-[11px]"}`}
+              title={t.chat.edited}
+            >
+              {t.chat.edited}
+            </span>
+          )}
         </div>
-        <p
-          className={`text-[#e4e1ed] mt-1 leading-relaxed ${
-            compact ? "text-xs" : "text-sm"
-          } ${message.isYou ? "text-right" : ""}`}
-        >
-          {message.text}
-        </p>
+
+        {isEditing ? (
+          <div className={`mt-1 w-full max-w-md ${message.isYou ? "text-right" : ""}`}>
+            <input
+              type="text"
+              value={editDraft}
+              onChange={(e) => onEditDraftChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onConfirmEdit();
+                }
+                if (e.key === "Escape") onCancelEdit();
+              }}
+              autoFocus
+              className={`w-full bg-[#13131b] border border-[#6366f1] rounded-lg px-3 py-2 text-[#e4e1ed] focus:outline-none ${
+                compact ? "text-xs" : "text-sm"
+              }`}
+            />
+            <div className={`flex gap-2 mt-2 ${message.isYou ? "justify-end" : ""}`}>
+              <button
+                type="button"
+                onClick={onCancelEdit}
+                className="text-xs text-[#908fa0] hover:text-white px-2 py-1 rounded-lg hover:bg-[#292932]"
+              >
+                {t.chat.cancelEdit}
+              </button>
+              <button
+                type="button"
+                onClick={onConfirmEdit}
+                disabled={!editDraft.trim()}
+                className="text-xs text-white bg-[#6366f1] hover:bg-[#8083ff] disabled:opacity-50 px-2 py-1 rounded-lg"
+              >
+                {t.chat.saveEdit}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p
+            className={`mt-1 leading-relaxed ${
+              compact ? "text-xs" : "text-sm"
+            } ${message.isYou ? "text-right" : ""} ${
+              message.isDeleted
+                ? "italic text-[#908fa0]"
+                : "text-[#e4e1ed]"
+            }`}
+          >
+            {message.isDeleted ? t.chat.messageDeleted : message.text}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -10,16 +10,20 @@ interface ChatDrawerProps {
   isOpen: boolean;
   showMemberList?: boolean;
   onClose: () => void;
+  channelId: string;
   channelName: string;
   participants: Participant[];
+  currentUser?: { name: string; avatar: string };
 }
 
 export default function ChatDrawer({
   isOpen,
   showMemberList = false,
   onClose,
+  channelId,
   channelName,
   participants,
+  currentUser,
 }: ChatDrawerProps) {
   const { t } = useI18n();
 
@@ -85,8 +89,10 @@ export default function ChatDrawer({
         </div>
       ) : (
         <TextChannelChat
-          key={channelName}
+          key={channelId}
+          channelId={channelId}
           channelName={channelName}
+          currentUser={currentUser}
           variant="compact"
         />
       )}

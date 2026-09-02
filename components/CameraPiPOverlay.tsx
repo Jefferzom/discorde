@@ -1,34 +1,60 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { VideoTrack } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-core";
-import { ExternalLink, GripVertical, X } from "lucide-react";
+import { ExternalLink, GripVertical, Pin, X } from "lucide-react";
 import { popOutFromTrackRef } from "@/lib/popOutVideo";
 
 interface CameraPiPOverlayProps {
   trackRef: TrackReference;
   name: string;
   onClose: () => void;
+  onSpotlight?: () => void;
   popOutLabel: string;
   closeLabel: string;
+  spotlightLabel: string;
 }
 
 export default function CameraPiPOverlay({
   trackRef,
   name,
   onClose,
+  onSpotlight,
   popOutLabel,
   closeLabel,
+  spotlightLabel,
 }: CameraPiPOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const dragOffset = useRef({ x: 0, y: 0 });
+  const dragMoved = useRef(false);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [dragging, setDragging] = useState(false);
+
+  const trackSid = trackRef.publication?.trackSid;
+
+  const placeDefault = useCallback(() => {
+    const parent = containerRef.current?.parentElement;
+    if (!parent) return;
+
+    const width = containerRef.current?.offsetWidth ?? 208;
+    const height = containerRef.current?.offsetHeight ?? 117;
+
+    setPosition({
+      x: Math.max(parent.clientWidth - width - 16, 8),
+      y: Math.max(parent.clientHeight - height - 16, 8),
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    setPosition(null);
+    placeDefault();
+  }, [trackRef.participant.identity, trackSid, placeDefault]);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("[data-pip-action]")) return;
     e.preventDefault();
+    dragMoved.current = false;
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
     dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -39,20 +65,20 @@ export default function CameraPiPOverlay({
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!dragging) return;
-      const parent = containerRef.current?.offsetParent as HTMLElement | null;
-      const bounds = parent?.getBoundingClientRect();
-      if (!bounds) return;
+      dragMoved.current = true;
+      const parent = containerRef.current?.parentElement;
+      if (!parent) return;
 
-      const width = containerRef.current?.offsetWidth ?? 200;
-      const height = containerRef.current?.offsetHeight ?? 140;
+      const width = containerRef.current?.offsetWidth ?? 208;
+      const height = containerRef.current?.offsetHeight ?? 117;
 
       const x = Math.min(
-        Math.max(e.clientX - bounds.left - dragOffset.current.x, 8),
-        bounds.width - width - 8
+        Math.max(e.clientX - parent.getBoundingClientRect().left - dragOffset.current.x, 8),
+        parent.clientWidth - width - 8
       );
       const y = Math.min(
-        Math.max(e.clientY - bounds.top - dragOffset.current.y, 8),
-        bounds.height - height - 8
+        Math.max(e.clientY - parent.getBoundingClientRect().top - dragOffset.current.y, 8),
+        parent.clientHeight - height - 8
       );
 
       setPosition({ x, y });
@@ -60,35 +86,33 @@ export default function CameraPiPOverlay({
     [dragging]
   );
 
-  const onPointerUp = useCallback((e: React.PointerEvent) => {
-    setDragging(false);
-    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-  }, []);
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      setDragging(false);
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      if (!dragMoved.current) {
+        onSpotlight?.();
+      }
+    },
+    [onSpotlight]
+  );
 
   useEffect(() => {
-    setPosition(null);
-  }, [trackRef.participant.identity]);
-
-  useEffect(() => {
-    if (position !== null || !containerRef.current?.offsetParent) return;
-    const parent = containerRef.current.offsetParent as HTMLElement;
-    const width = containerRef.current.offsetWidth || 200;
-    const height = containerRef.current.offsetHeight || 140;
-    setPosition({
-      x: parent.clientWidth - width - 16,
-      y: parent.clientHeight - height - 16,
-    });
-  }, [position, trackRef.participant.identity]);
-
-  if (!position) return null;
+    if (position !== null) return;
+    placeDefault();
+  }, [position, placeDefault]);
 
   return (
     <div
       ref={containerRef}
-      className={`absolute z-20 w-44 sm:w-52 aspect-video rounded-xl overflow-hidden shadow-2xl border-2 border-indigo-500/50 bg-black cursor-grab active:cursor-grabbing ${
-        dragging ? "ring-2 ring-indigo-400/60" : ""
-      }`}
-      style={{ left: position.x, top: position.y }}
+      className={`absolute z-20 w-44 sm:w-52 aspect-video rounded-xl overflow-hidden shadow-2xl border-2 border-indigo-500/50 bg-black ${
+        onSpotlight ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
+      } ${dragging ? "ring-2 ring-indigo-400/60" : ""}`}
+      style={
+        position
+          ? { left: position.x, top: position.y }
+          : { right: 16, bottom: 16 }
+      }
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -106,6 +130,18 @@ export default function CameraPiPOverlay({
           <span className="text-[10px] font-semibold text-white truncate">{name}</span>
         </div>
         <div className="flex items-center gap-0.5">
+          {onSpotlight && (
+            <button
+              type="button"
+              data-pip-action
+              data-pip-spotlight
+              onClick={onSpotlight}
+              className="p-1 rounded-md bg-[#13131b]/90 border border-white/10 text-indigo-300 hover:text-white hover:bg-indigo-500/30 transition-colors"
+              title={spotlightLabel}
+            >
+              <Pin className="w-3 h-3" />
+            </button>
+          )}
           <button
             type="button"
             data-pip-action

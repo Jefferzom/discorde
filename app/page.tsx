@@ -103,7 +103,7 @@ export default function StreamSyncHub() {
         creatingRoom={creatingRoom}
       />
 
-      <main className="flex-1 ml-[384px] flex flex-col bg-[#13131b] relative min-w-0 h-screen overflow-hidden">
+      <main className="flex-1 ml-[312px] flex flex-col bg-[#13131b] relative min-w-0 h-screen overflow-hidden">
         <div className="flex flex-col">
           <TopBar
             channelName={channelDisplayName}
@@ -139,8 +139,14 @@ export default function StreamSyncHub() {
           ) : (
             <TextChannelChat
               key={activeChannelId}
+              channelId={activeChannelId}
               channelName={channelDisplayName}
               serverName={currentServer.name}
+              currentUser={
+                mounted && profile
+                  ? { name: profile.username, avatar: profile.avatarUrl }
+                  : undefined
+              }
             />
           )}
 
@@ -151,8 +157,14 @@ export default function StreamSyncHub() {
               setIsChatOpen(false);
               setIsMemberListOpen(false);
             }}
+            channelId={activeChannelId}
             channelName={channelDisplayName}
             participants={participants}
+            currentUser={
+              mounted && profile
+                ? { name: profile.username, avatar: profile.avatarUrl }
+                : undefined
+            }
           />
         </div>
       </main>

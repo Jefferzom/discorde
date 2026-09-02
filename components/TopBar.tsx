@@ -45,32 +45,35 @@ export default function TopBar({
   const { t, language, setLanguage } = useI18n();
 
   return (
-    <header className="h-12 w-full bg-[#1f1f27] border-b border-[#292932] flex items-center justify-between px-4 z-10 shadow-sm shrink-0">
+    <header className="h-12 w-full bg-[#1f1f27] border-b border-[#292932] flex items-center justify-between gap-3 px-4 z-10 shadow-sm shrink-0 min-w-0">
       {/* Left: Channel Info */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
+        <div className="flex items-center gap-2 min-w-0">
           {channelType === "voice" ? (
-            <Volume2 className="w-5 h-5 text-[#adc6ff]" />
+            <Volume2 className="w-5 h-5 text-[#adc6ff] shrink-0" />
           ) : channelType === "stage" ? (
-            <Radio className="w-5 h-5 text-[#ffb783]" />
+            <Radio className="w-5 h-5 text-[#ffb783] shrink-0" />
           ) : (
-            <Hash className="w-5 h-5 text-[#908fa0]" />
+            <Hash className="w-5 h-5 text-[#908fa0] shrink-0" />
           )}
-          <h2 className="font-bold text-[15px] text-[#e4e1ed] tracking-tight">
+          <h2
+            className="font-bold text-[15px] text-[#e4e1ed] tracking-tight truncate"
+            title={channelName}
+          >
             {channelName}
           </h2>
         </div>
 
         {isInCall && channelType === "voice" && (
-          <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
+          <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium shrink-0 whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>{t.common.rtcConnected}</span>
           </div>
         )}
 
-        <div className="h-4 w-px bg-[#34343d] mx-1 hidden md:block" />
+        <div className="h-4 w-px bg-[#34343d] mx-1 hidden lg:block shrink-0" />
 
-        <div className="hidden md:flex items-center gap-3 text-[13px] text-[#c7c4d7]">
+        <div className="hidden lg:flex items-center gap-3 text-[13px] text-[#c7c4d7] shrink-0">
           <span className="hover:text-white cursor-pointer transition-colors flex items-center gap-1">
             <Pin className="w-3.5 h-3.5" /> {t.common.pinnedNotes}
           </span>
@@ -81,7 +84,7 @@ export default function TopBar({
       </div>
 
       {/* Right: Actions & Tools */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         {/* Language Switcher Quick Pill */}
         <button
           onClick={() => setLanguage(language === "pt" ? "en" : "pt")}

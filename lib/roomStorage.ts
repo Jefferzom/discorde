@@ -65,3 +65,9 @@ export function pruneRoomNamesLocal(activeRoomIds: string[]): void {
     // ignore corrupt storage
   }
 }
+
+export function getRoomDisplayName(roomId: string, unnamedLabel = "Sala"): string {
+  const localName = getRoomNameLocal(roomId);
+  if (localName) return localName;
+  return `${unnamedLabel} #${roomId.slice(0, 6)}`;
+}

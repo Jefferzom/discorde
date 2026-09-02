@@ -13,7 +13,10 @@ interface ParticipantVideoTileProps {
   youLabel?: string;
   sharingLabel?: string;
   popOutLabel: string;
-  variant?: "filmstrip" | "split";
+  onFocus?: () => void;
+  isFocused?: boolean;
+  focusLabel?: string;
+  variant?: "filmstrip" | "split" | "stage";
   badge?: string;
 }
 
@@ -24,23 +27,39 @@ export default function ParticipantVideoTile({
   youLabel,
   sharingLabel,
   popOutLabel,
+  onFocus,
+  isFocused = false,
+  focusLabel,
   variant = "filmstrip",
   badge,
 }: ParticipantVideoTileProps) {
-  const hasVideo = isTrackReference(trackRef) && trackRef.publication?.track;
+  const hasVideo = isTrackReference(trackRef) && Boolean(trackRef.publication?.track);
   const isScreenShare = trackRef.source === Track.Source.ScreenShare;
 
   const sizeClass =
-    variant === "split"
+    variant === "stage"
       ? "w-full h-full min-h-0"
-      : "w-48 sm:w-56 h-full shrink-0";
+      : variant === "split"
+        ? "w-full h-full min-h-0"
+        : "w-48 sm:w-56 h-full shrink-0";
 
   return (
     <div
+      role={onFocus ? "button" : undefined}
+      tabIndex={onFocus ? 0 : undefined}
+      onClick={onFocus}
+      onKeyDown={(e) => {
+        if (onFocus && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onFocus();
+        }
+      }}
       className={`${sizeClass} bg-[#1f1f27] rounded-2xl overflow-hidden relative shadow-md border transition-all duration-200 group ${
-        isScreenShare
-          ? "border-red-500/40 hover:border-red-400"
-          : "border-[#292932] hover:border-[#6366f1]"
+        isFocused
+          ? "border-[#6366f1] ring-2 ring-indigo-500/40"
+          : isScreenShare
+            ? "border-red-500/40 hover:border-red-400 cursor-pointer"
+            : "border-[#292932] hover:border-[#6366f1] cursor-pointer"
       }`}
     >
       {hasVideo ? (
@@ -60,7 +79,10 @@ export default function ParticipantVideoTile({
 
       <button
         type="button"
-        onClick={() => popOutFromTrackRef(trackRef, name)}
+        onClick={(e) => {
+          e.stopPropagation();
+          popOutFromTrackRef(trackRef, name);
+        }}
         className="absolute top-2 right-2 p-1.5 rounded-lg bg-[#13131b]/90 border border-white/10 text-[#c7c4d7] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
         title={popOutLabel}
       >
@@ -74,6 +96,7 @@ export default function ParticipantVideoTile({
             {isYou && youLabel && ` (${youLabel})`}
             {badge && ` · ${badge}`}
             {isScreenShare && sharingLabel && ` · ${sharingLabel}`}
+            {isFocused && focusLabel && ` · ${focusLabel}`}
           </span>
         </div>
       </div>
@@ -93,7 +116,7 @@ export function StageLayoutToggle({
   spotlightLabel: string;
 }) {
   return (
-    <div className="absolute top-4 right-4 flex items-center gap-1 z-10 bg-[#13131b]/90 backdrop-blur-md rounded-xl p-1 border border-white/10 shadow-lg">
+    <div className="flex items-center gap-1 bg-[#13131b]/90 backdrop-blur-md rounded-xl p-1 border border-white/10 shadow-lg">
       <button
         type="button"
         onClick={() => onChange("spotlight")}

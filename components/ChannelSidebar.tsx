@@ -15,11 +15,15 @@ import {
   Folder,
   Code2,
   Bell,
+  PhoneOff,
+  Signal,
 } from "lucide-react";
 import { Participant } from "../types/streamsync";
 import { useI18n } from "@/lib/i18n/context";
 import { useActiveRooms } from "@/hooks/useActiveRooms";
 import VoiceRoomsList from "@/components/VoiceRoomsList";
+import MediaDeviceSelector from "@/components/MediaDeviceSelector";
+import { getRoomNameLocal } from "@/lib/roomStorage";
 
 interface ChannelSidebarProps {
   serverName: string;
@@ -38,6 +42,7 @@ interface ChannelSidebarProps {
   onJoinRoom?: (roomId: string) => void;
   onCreateRoom?: () => void;
   creatingRoom?: boolean;
+  onDisconnectVoice?: () => void;
 }
 
 export default function ChannelSidebar({
@@ -57,13 +62,25 @@ export default function ChannelSidebar({
   onJoinRoom,
   onCreateRoom,
   creatingRoom = false,
+  onDisconnectVoice,
 }: ChannelSidebarProps) {
   const { t } = useI18n();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { rooms, loading, error, reload } = useActiveRooms();
 
+  const isVoiceConnected = Boolean(currentRoomId);
+  const connectedRoom = currentRoomId
+    ? rooms.find((room) => room.id === currentRoomId)
+    : null;
+  const connectedRoomLabel =
+    connectedRoom?.name ??
+    (currentRoomId ? getRoomNameLocal(currentRoomId) : null) ??
+    t.navigation.voiceLounge;
+
+  const bottomOverlayHeight = isVoiceConnected ? "7.75rem" : "3.5rem";
+
   return (
-    <aside className="w-[311px] h-screen fixed left-[72px] top-0 bg-[#1b1b23] flex flex-col z-20 shadow-xl border-r border-[#292932]">
+    <aside className="w-[240px] h-screen fixed left-[72px] top-0 bg-[#1b1b23] flex flex-col z-20 shadow-xl border-r border-[#292932]">
       {/* Server Header */}
       <div className="relative">
         <button
@@ -118,7 +135,10 @@ export default function ChannelSidebar({
       </div>
 
       {/* Channels List */}
-      <div className="flex-1 overflow-y-auto px-2 py-3 flex flex-col gap-1 custom-scrollbar">
+      <div
+        className="flex-1 overflow-y-auto px-2 py-3 flex flex-col gap-1 custom-scrollbar"
+        style={{ paddingBottom: bottomOverlayHeight }}
+      >
         {/* TEXT CHANNELS CATEGORY */}
         <div className="flex items-center justify-between px-2 pt-2 pb-1 text-[#908fa0] group">
           <span className="text-[11px] font-bold tracking-wider uppercase">
@@ -236,66 +256,116 @@ export default function ChannelSidebar({
         </div>
       </div>
 
-      {/* User Status Bar */}
-      <div className="h-14 bg-[#13131b] flex items-center justify-between px-2.5 border-t border-[#292932]">
-        <div
-          onClick={onOpenSettings}
-          className="flex items-center gap-2 p-1 rounded-lg hover:bg-[#292932] cursor-pointer transition-colors max-w-[125px]"
-        >
-          <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0">
-            <img
-              src={
-                localUser?.avatar ??
-                "https://api.dicebear.com/7.x/bottts/svg?seed=guest"
-              }
-              alt={localUser?.name ?? "User"}
-              className="w-full h-full object-cover"
-            />
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#13131b]" />
+      {/* Bottom overlay — extends over server rail for full control width */}
+      <div className="absolute bottom-0 -left-[72px] w-[312px] z-40 flex flex-col pointer-events-none">
+        <div className="h-6 bg-gradient-to-t from-[#1b1b23] to-transparent pointer-events-none" />
+
+        <div className="pointer-events-auto bg-[#1b1b23] shadow-[0_-8px_24px_rgba(0,0,0,0.45)]">
+          {isVoiceConnected && (
+            <div className="flex bg-[#23232b] border-t border-[#292932]">
+              <div className="w-[72px] shrink-0 bg-[#23232b]" aria-hidden />
+              <div className="flex-1 min-w-0 px-3 py-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Signal className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold text-emerald-400 leading-tight">
+                        {t.navigation.voiceConnected}
+                      </p>
+                      <p className="text-[11px] text-[#c7c4d7] truncate leading-tight">
+                        {t.navigation.voiceLounge} / {connectedRoomLabel}
+                      </p>
+                    </div>
+                  </div>
+
+                  {onDisconnectVoice && (
+                    <button
+                      type="button"
+                      onClick={onDisconnectVoice}
+                      className="shrink-0 p-1.5 rounded-lg text-[#c7c4d7] hover:bg-[#292932] hover:text-red-400 transition-colors"
+                      title={t.controls.disconnect}
+                    >
+                      <PhoneOff className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* User Status Bar */}
+          <div className="flex h-14 bg-[#13131b] border-t border-[#292932] min-w-0">
+            <div className="w-[72px] shrink-0 bg-[#13131b]" aria-hidden />
+            <div className="flex flex-1 items-center gap-1 px-2 min-w-0">
+            <div
+              onClick={onOpenSettings}
+              className="flex items-center gap-2 p-1 rounded-lg hover:bg-[#292932] cursor-pointer transition-colors flex-1 min-w-0"
+            >
+              <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0">
+                <img
+                  src={
+                    localUser?.avatar ??
+                    "https://api.dicebear.com/7.x/bottts/svg?seed=guest"
+                  }
+                  alt={localUser?.name ?? "User"}
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#13131b]" />
+              </div>
+              <div className="flex flex-col truncate">
+                <span className="text-[13px] font-semibold text-[#e4e1ed] truncate leading-tight">
+                  {localUser?.name ?? "Guest"}
+                </span>
+                <span className="text-[10px] text-[#908fa0] truncate">
+                  {isVoiceConnected
+                    ? `#1337 • ${t.navigation.inVoice}`
+                    : `#1337 • ${t.common.online}`}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Media Controls */}
+            <div className="flex items-center gap-0.5 shrink-0">
+              <div className="flex items-center">
+                <button
+                  onClick={onToggleMute}
+                  className={`p-1.5 rounded-l-lg transition-colors ${
+                    isMuted
+                      ? "text-red-400 bg-red-500/10 hover:bg-red-500/20"
+                      : "text-[#c7c4d7] hover:bg-[#292932] hover:text-white"
+                  }`}
+                  title={isMuted ? t.navigation.unmuteMic : t.navigation.muteMic}
+                >
+                  {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+                <MediaDeviceSelector kind="audioinput" variant="compact" dropUp />
+              </div>
+
+              <div className="flex items-center">
+                <button
+                  onClick={onToggleDeafen}
+                  className={`p-1.5 rounded-l-lg transition-colors ${
+                    isDeafened
+                      ? "text-red-400 bg-red-500/10 hover:bg-red-500/20"
+                      : "text-[#c7c4d7] hover:bg-[#292932] hover:text-white"
+                  }`}
+                  title={isDeafened ? t.navigation.undeafen : t.navigation.deafen}
+                >
+                  <Headphones className="w-4 h-4" />
+                </button>
+                <MediaDeviceSelector kind="audiooutput" variant="compact" dropUp />
+              </div>
+
+              <button
+                onClick={onOpenSettings}
+                className="p-1.5 rounded-lg text-[#c7c4d7] hover:bg-[#292932] hover:text-white transition-colors shrink-0"
+                title={t.navigation.userSettings}
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            </div>
+            </div>
           </div>
-          <div className="flex flex-col truncate">
-            <span className="text-[13px] font-semibold text-[#e4e1ed] truncate leading-tight">
-              {localUser?.name ?? "Guest"}
-            </span>
-            <span className="text-[10px] text-[#908fa0] truncate">
-              #1337 • {t.common.online}
-            </span>
-          </div>
-        </div>
-
-        {/* Quick Media Controls */}
-        <div className="flex items-center gap-0.5">
-          <button
-            onClick={onToggleMute}
-            className={`p-1.5 rounded-lg transition-colors ${
-              isMuted
-                ? "text-red-400 bg-red-500/10 hover:bg-red-500/20"
-                : "text-[#c7c4d7] hover:bg-[#292932] hover:text-white"
-            }`}
-            title={isMuted ? t.navigation.unmuteMic : t.navigation.muteMic}
-          >
-            {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-          </button>
-
-          <button
-            onClick={onToggleDeafen}
-            className={`p-1.5 rounded-lg transition-colors ${
-              isDeafened
-                ? "text-red-400 bg-red-500/10 hover:bg-red-500/20"
-                : "text-[#c7c4d7] hover:bg-[#292932] hover:text-white"
-            }`}
-            title={isDeafened ? t.navigation.undeafen : t.navigation.deafen}
-          >
-            <Headphones className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={onOpenSettings}
-            className="p-1.5 rounded-lg text-[#c7c4d7] hover:bg-[#292932] hover:text-white transition-colors"
-            title={t.navigation.userSettings}
-          >
-            <Settings className="w-4 h-4" />
-          </button>
         </div>
       </div>
     </aside>
