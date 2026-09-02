@@ -62,6 +62,10 @@ export const translations = {
       screenActive: "Compartilhando Tela",
       stageView: "Palco",
       gridView: "Grade",
+      splitView: "Dividir tela",
+      spotlightView: "Tela cheia + PiP",
+      hidePip: "Ocultar câmera flutuante",
+      sharerCamera: "Câmera de quem compartilha",
     },
     controls: {
       turnOnCamera: "Ligar câmera",
@@ -230,6 +234,10 @@ export const translations = {
       screenActive: "Sharing Screen",
       stageView: "Stage",
       gridView: "Grid",
+      splitView: "Split view",
+      spotlightView: "Fullscreen + PiP",
+      hidePip: "Hide floating camera",
+      sharerCamera: "Presenter's camera",
     },
     controls: {
       turnOnCamera: "Turn on camera",
